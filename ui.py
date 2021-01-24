@@ -31,8 +31,8 @@ def go(sql):  #处理事件，*args表示可变参数
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
     print('ip：'+IP+'用户：'+user+'密码：'+psd)
-    # conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
-    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'oracle.lecent.domain')
+    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    #conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'oracle.lecent.domain')#本地
     link_ora = conn
     cur = conn.cursor()  # 定义连接对象
     link_cur=cur
