@@ -31,7 +31,8 @@ def go(sql):  #处理事件，*args表示可变参数
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
     print('ip：'+IP+'用户：'+user+'密码：'+psd)
-    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    # conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'oracle.lecent.domain')
     link_ora = conn
     cur = conn.cursor()  # 定义连接对象
     link_cur=cur
@@ -67,23 +68,25 @@ def create_newwin():
     top.geometry("400x300")
     ts = tkinter.Label(top, text="处理银行交易成功但是状态为“处理中”的情况！！", font=("隶书", 10),fg="red")
     ts.place(x=1, y=20, anchor='nw')
-
     tl = tkinter.Label(top, text="输入单号:", font=("隶书", 10), fg="green")
     tl.place(x=5, y=60, anchor='nw')
+
     v1 = StringVar()
     e1 = Entry(top, textvariable=v1, width=40)
     bill_number = v1.get()
     e1.grid(row=1, column=0, padx=10, pady=10)
-    e1.place(x=10 ,y=80)
+    e1.place(x=10, y=80)
 
     # 上下账处理处理中的
-    def prisoner_money_status(bill_number):
-        print(bill_number)
-        moneyin_upsql = " update capital_deposit cd set cd.status = 2 where cd.deposit_id=" + bill_number
-        print(bill_number)
-    Button(top, text='提交处理',command=prisoner_money_status(bill_number)).place(x=310, y=80)
+    def prisoner_money_status():
+        print(v1.get())
+        moneyin_upsql = "update capital_deposit cd set cd.status = 2 where cd.deposit_id='"+v1.get()+"'"+";"+"commit;"
+        results = go(moneyin_upsql)
 
-    print(v1.get())
+        print(results)
+    Button(top, text='提交处理',command=prisoner_money_status).place(x=310, y=80)
+
+
 
 
 
@@ -102,8 +105,8 @@ comboxlist.current(0) #默认选择第一个
 # comboxlist.bind("<<ComboboxSelected>>",go) #绑定事件,(下拉列表框被选中时，绑定go()函数)
 comboxlist.place(x=10,y=40,anchor='nw')
 
-link_btn=tkinter.Button(win,text="确定", font=("隶书",10),command=go,width=6, height=1, fg="green")
-link_btn.place(x=400, y=40, anchor='nw')
+# link_btn=tkinter.Button(win,text="确定", font=("隶书",10),command=go,width=6, height=1, fg="green")
+# link_btn.place(x=400, y=40, anchor='nw')
 # comboxlist.pack()
 
 #功能----上下账模块，接见款
