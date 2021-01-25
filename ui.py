@@ -24,67 +24,204 @@ w1.place(x=250, y=5, anchor='nw')
 
 #连接oracle
 def go(sql):  #处理事件，*args表示可变参数
-    print(comboxlist.get().split(',')) #打印选中的值
+    # print(comboxlist.get().split(',')) #打印选中的值
     #获取IP,用户及密码连接Oracle
     status=0
     IP=comboxlist.get().split(',')[0]
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
-    print('ip：'+IP+'用户：'+user+'密码：'+psd)
+    # print('ip：'+IP+'用户：'+user+'密码：'+psd)
     conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
+    aletr_msg.place(x=550, y=40, anchor='nw')
     #conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'oracle.lecent.domain') #本地测试
-    link_ora = conn
     cur = conn.cursor()  # 定义连接对象
-    link_cur=cur
     # sql = "select * from base_offender_info where 1=1"
-    result = cur.execute(sql).fetchall()
-    title = [i[0] for i in cur.description]
-    # print(title)
-    aletr_msg = tkinter.Label(win, text="数据连接成功...",font=("隶书",11), fg="green")
-    aletr_msg.place(x=460, y=40, anchor='nw')
-    cur.close()  # 关闭cursor对象
-    # conn.commit()
-    conn.close()  # 关闭数据库链接
-    return result
+    if sql.split()[0] == 'select':
+        result = cur.execute(sql).fetchall()
+        #title = [i[0] for i in cur.description]
+        cur.close()  # 关闭cursor对象
+        conn.close()  # 关闭数据库链接
+        return result
+    if (sql.split()[0] == 'update' or sql.split()[0] == 'delete') :
+        cur.execute(sql)
+        effectRow = cur.rowcount
+        conn.commit()  # 执行update操作时需要写这个，否则就会更新不成功
+        cur.close()  # 关闭cursor对象
+        conn.close()  # 关闭数据库链接
+        return effectRow
+
+
+
 
 #查询上下账状态不正常的
 def prisoner_money_check():
-    sql = "select t.deposit_id as 单号,t.bank_card_number as 卡号,t.status as 状态 from capital_deposit_item t \
+    sql = "select * from (select t.deposit_id as 单号,t.bank_card_number as 卡号,t.status as 状态 from capital_deposit_item t \
     where t.status in (0,2,9) union all select cwi.withdrawl_id as 单号,cwi.bank_card_number as 卡号,cwi.status as 状态 \
-    from capital_withdrawl_item cwi where cwi.status in (0,2,9)"
+    from capital_withdrawl_item cwi where cwi.status in (0,2,9)) order by 状态 desc "
     results = go(sql)
-    print(results)
-    return_msg.delete("1.0",tkinter.END)
+
+    bill_num.delete("1.0", tkinter.END)
+    sql_bill = "select 单号 from (select t.deposit_id as 单号,t.bank_card_number as 卡号,t.status as 状态 from capital_deposit_item t \
+    where t.status in (0,2,9) union all select cwi.withdrawl_id as 单号,cwi.bank_card_number as 卡号,cwi.status as 状态 \
+    from capital_withdrawl_item cwi where cwi.status in (0,2,9)) group by 单号  "
+    bill_results = go(sql_bill)
+    bill_num.insert('insert',bill_results)
+
+    x = return_msg.get_children()
+    for item in x:
+        return_msg.delete(item)
+
     if len(results) > 0:
-        return_msg.insert('insert',results)
-        # return_msg.pack(fill=tkinter.Y, side=tkinter.BOTTOM)
+        # return_msg.insert('insert',results)
+        print(len(results))
+        j = 0
+        for i in results:
+            return_msg.insert('', 'end', values=results[j])
+            j=j+1
+
+        # bill_num.pack(fill=tkinter.Y, side=tkinter.BOTTOM)
     else:
-        return_msg.insert('insert', '暂无结果！')
+        bill_num.insert('insert', '暂无结果！')
 
 
 def create_newwin():
     top = Toplevel()
     top.title('上下账处理')
-    top.geometry("400x300")
-    ts = tkinter.Label(top, text="处理银行交易成功但是状态为“处理中”的情况！！", font=("隶书", 10),fg="red")
+    top.geometry("600x300")
+    ts = tkinter.Label(top, text="处理银行交易成功但是状态为“处理中”且上下账单明细未同步的情况！！", font=("隶书", 10),fg="red")
     ts.place(x=1, y=20, anchor='nw')
     tl = tkinter.Label(top, text="输入单号:", font=("隶书", 10), fg="green")
     tl.place(x=5, y=60, anchor='nw')
 
     v1 = StringVar()
     e1 = Entry(top, textvariable=v1, width=40)
-    bill_number = v1.get()
+    # bill_number = v1.get()
     e1.grid(row=1, column=0, padx=10, pady=10)
     e1.place(x=10, y=80)
 
     # 上下账处理处理中的
     def prisoner_money_status():
-        print(v1.get())
-        moneyin_upsql = "update capital_deposit cd set cd.status = 2 where cd.deposit_id='"+v1.get()+"'"+";"+"commit;"
-        results = go(moneyin_upsql)
+        print(v1.get()[0:2])
+        str = StringVar()
+        alert_msg = tkinter.Label(top, textvariable=str, font=("隶书", 10), fg="green")
+        alert_msg.place(x=1, y=150, anchor='nw')
+        if v1.get()[0:2] == 'CD':
+            deposit_upsql = "update capital_deposit cd set cd.status = 2 where cd.deposit_id='"+v1.get()+"'"
+            results_deposit = go(deposit_upsql)
+            if results_deposit == 0 :
+                str.set('未找到上账单！')
+            else:
+                #查询中间表是否存在，或者是否存在多条明细，无中间表则返回提示未生成中间表，有多条中间表则删除vchr_st为空的中间表
+                proxy_count = "select count(*) from bank_proxy_payment_received bpr where bpr.cust_bill_number='"+v1.get()+"'"
+                total_count = go(proxy_count)
+                str.set('上账单状态更新为‘2’成功，但未找到中间表！')
+                if total_count[0][0] == 1:
+                    proxy_upsql = "update bank_proxy_payment_received bpr set bpr.vchr_st='902' where bpr.cust_bill_number='"+v1.get()+"'"
+                    results_proxy = go(proxy_upsql)
+                    str.set('上账单状态更新为‘2’中间表状态更新为‘902’成功，5分钟后定时器重跑同步明细，请注意查看系统明细！！')
+                else:
+                    proxy_del = "delete from bank_proxy_payment_received bpr where bpr.vchr_st is null and bpr.cust_bill_number='"+v1.get()+"'"
+                    results_proxy = go(proxy_del)
+                    proxy_upsql = "update bank_proxy_payment_received bpr set bpr.vchr_st='902' where bpr.cust_bill_number='" + v1.get() + "'"
+                    results_proxy = go(proxy_upsql)
+                    str.set('已删除多余中间表且上账单状态更新为‘2’中间表状态更新为‘902’成功，5分钟后定时器重跑同步明细，请注意查看系统明细！！')
 
-        print(results)
+        if v1.get()[0:2] == 'CW':
+            withdrawl_upsql = "update capital_withdrawl cw set cw.status = 2 where cw.withdrawl_id='" + v1.get() + "'"
+            results_withdrawl = go(withdrawl_upsql)
+            if results_withdrawl == 0:
+                str.set('未找到下账单！')
+            else:
+                # 查询中间表是否存在，或者是否存在多条明细，无中间表则返回提示未生成中间表，有多条中间表则删除vchr_st为空的中间表
+                proxy_count_cw = "select count(*) from bank_proxy_payment_received bpr where bpr.cust_bill_number='" + v1.get() + "'"
+                total_count_cw = go(proxy_count_cw)
+                str.set('下账单状态更新为‘2’成功，但未找到中间表！')
+                if total_count_cw[0][0] == 1:
+                    proxy_upsql_cw = "update bank_proxy_payment_received bpr set bpr.vchr_st='902' where bpr.cust_bill_number='" + v1.get() + "'"
+                    results_proxy = go(proxy_upsql_cw)
+                    str.set('下账单状态更新为‘2’中间表状态更新为‘902’成功，5分钟后定时器重跑同步明细，请注意查看系统明细！！')
+                else:
+                    proxy_del_cw = "delete from bank_proxy_payment_received bpr where bpr.vchr_st is null and bpr.cust_bill_number='" + v1.get() + "'"
+                    results_proxy = go(proxy_del_cw)
+                    proxy_upsql = "update bank_proxy_payment_received bpr set bpr.vchr_st='902' where bpr.cust_bill_number='" + v1.get() + "'"
+                    results_proxy = go(proxy_upsql)
+                    str.set('已删除多余中间表且下账单状态更新为‘2’中间表状态更新为‘902’成功，5分钟后定时器重跑同步明细，请注意查看系统明细！！')
+        # if v1.get()[0:3] == 'JJK':
+        #     jjk_upsql = "update capital_cash cc set cc.status=3 where cc.bill_number in \
+        #                 (select ccd.main_single_bill_number from capital_cash_detailed ccd where ccd.status=3)"
+        #     results_jjk = go(jjk_upsql)
+        if (v1.get()[0:2] != 'CW' and v1.get()[0:2] != 'CD'):
+            str.set('单号错误，请输入正确的单号！！')
+
     Button(top, text='提交处理',command=prisoner_money_status).place(x=310, y=80)
+
+
+
+
+def create_newwin_jjk():
+    top = Toplevel()
+    top.title('接见款处理')
+    top.geometry("700x400")
+    ts = tkinter.Label(top, text="处理银行交易成功但是状态为“处理中”且明细未同步的情况！！", font=("隶书", 10), fg="red")
+    ts.place(x=1, y=20, anchor='nw')
+    tl = tkinter.Label(top, text="以下接见款状态为处理中:", font=("隶书", 10), fg="green")
+    tl.place(x=5, y=40, anchor='nw')
+
+    columns_title = ("1", "2", "3","4","5")
+    jjk_msg = ttk.Treeview(top, height=10, show="headings", columns=columns_title)  # 表格
+    jjk_msg.heading('1', text='主单号')
+    jjk_msg.heading('2', text='主单号状态')
+    jjk_msg.heading('3', text='分单号', )
+    jjk_msg.heading('4', text='分单号状态', )
+    jjk_msg.heading('5', text='中间表状态', )
+    jjk_msg.column('1', anchor='center')
+    jjk_msg.column('2', width=90,anchor='center')
+    jjk_msg.column('3', anchor='center')
+    jjk_msg.column('4', width=90,anchor='center')
+    jjk_msg.column('5', width=90, anchor='center')
+    jjk_msg.place(x=10, y=80, anchor='nw')
+
+    jjk_proxy = "select cc.bill_number as 主单号,cc.status as 主单号状态,\
+                (select tt.bill_number from capital_cash_detailed tt where tt.main_single_bill_number = cc.bill_number) as 分单号,\
+                (select tt.status from capital_cash_detailed tt where tt.main_single_bill_number = cc.bill_number) as 分单号状态, \
+                bpr.vchr_st as 中间表状态 from capital_cash cc \
+                left join bank_proxy_payment_received bpr on cc.bill_number = bpr.cust_bill_number \
+                where cc.bill_number in (select ccd.main_single_bill_number from capital_cash_detailed ccd where ccd.status = 3)"
+    jjk_query = go(jjk_proxy)
+    print(jjk_query)
+
+    x = jjk_msg.get_children()
+    for item in x:
+        jjk_msg.delete(item)
+
+    if len(jjk_query) > 0:
+        j = 0
+        for i in jjk_query:
+            jjk_msg.insert('', 'end', values=jjk_query[j])
+            j=j+1
+    else:
+        jjk_msg.insert('', 'end', values='暂无结果')
+
+    def prisoner_jjk():
+        str = StringVar()
+        alert_msg = tkinter.Label(top, textvariable=str, font=("隶书", 10), fg="green")
+        alert_msg.place(x=10, y=370, anchor='nw')
+
+        jjk_upsql = "update capital_cash cc set cc.status=3 where cc.bill_number in \
+                    (select ccd.main_single_bill_number from capital_cash_detailed ccd where ccd.status=3)"
+        jjk_results = go(jjk_upsql)
+        if jjk_results == 0:
+            str.set('未更新任何数据！！')
+        else:
+            str.set('已更新主单状态9-->3 请等待5分钟后查看系统明细！！')
+
+
+
+
+    Button(top, text='提交处理', command=prisoner_jjk).place(x=10, y=320)
+
+
 
 
 
@@ -99,7 +236,7 @@ def create_newwin():
 
 
 comvalue=tkinter.StringVar()#窗体自带的文本，新建一个值
-comboxlist=ttk.Combobox(win,width=45, height=20,font=1,textvariable=comvalue) #初始化
+comboxlist=ttk.Combobox(win,width=65, height=20,font=1,textvariable=comvalue) #初始化
 comboxlist["values"]=msg
 comboxlist.current(0) #默认选择第一个
 # comboxlist.bind("<<ComboboxSelected>>",go) #绑定事件,(下拉列表框被选中时，绑定go()函数)
@@ -124,7 +261,7 @@ button2.place(x=150, y=90, anchor='nw')
 button3 = tkinter.Button(win, text="上下账处理中状态修改", font=("隶书",10), width=18, height=2, fg="green")
 button3.place(x=300, y=90, anchor='nw')
 
-button4 = tkinter.Button(win, text="接见款处理中", font=("隶书",10), width=18, height=2, fg="green")
+button4 = tkinter.Button(win, text="接见款处理中", font=("隶书",10), command=create_newwin_jjk, width=18, height=2, fg="green")
 button4.place(x=450, y=90, anchor='nw')
 
 button5 = tkinter.Button(win, text="接见款处理中状态修改", font=("隶书",10), width=18, height=2, fg="green")
@@ -133,8 +270,23 @@ button5.place(x=600, y=90, anchor='nw')
 b1 = tkinter.Label(win, text="返回信息：",font=("隶书",10), fg="green")
 b1.place(x=5, y=200, anchor='nw')
 
-return_msg=tkinter.Text(win,width=100,height=10)
+# return_msg=tkinter.Text(win,width=100,height=10)
+columns = ("1", "2","3")
+return_msg=ttk.Treeview(win, height=6, show="headings", columns=columns)  # 表格
+return_msg.heading('1',text='单号')
+return_msg.heading('2',text='银行账号')
+return_msg.heading('3',text='状态',)
+return_msg.column('1',anchor='center')
+return_msg.column('2',anchor='center')
+return_msg.column('3',width=50,anchor='center')
 return_msg.place(x=80, y=150, anchor='nw')
+
+bil = tkinter.Label(win, text="单号：",font=("隶书",10), fg="green")
+bil.place(x=550, y=200, anchor='nw')
+bill_num = tkinter.Text(win,width=30,height=11)
+bill_num.config(wrap=WORD)
+bill_num.place(x=600, y=150, anchor='nw')
+
 
 
 #功能---服务器模块
