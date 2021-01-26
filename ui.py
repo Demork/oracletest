@@ -216,12 +216,18 @@ def create_newwin_jjk():
         else:
             str.set('已更新主单状态9-->3 请等待5分钟后查看系统明细！！')
 
-
-
-
     Button(top, text='提交处理', command=prisoner_jjk).place(x=10, y=320)
 
-
+#银行明细重复检测，创建一个窗口来处理
+def create_newwin_bankdet():
+    print('1111')
+    top = Toplevel()
+    top.title('银行流水重复')
+    top.geometry("700x400")
+    ts = tkinter.Label(top, text="检测银行流水重复执行删除！！", font=("隶书", 10), fg="red")
+    ts.place(x=1, y=20, anchor='nw')
+    tl = tkinter.Label(top, text="以下银行明细表中重复的数据:", font=("隶书", 10), fg="green")
+    tl.place(x=5, y=40, anchor='nw')
 
 
 
@@ -297,7 +303,7 @@ button7 = tkinter.Button(win, text="tomcat日志清除", font=("隶书",10), wid
 button7.place(x=130, y=300, anchor='nw')
 
 #数据重复
-button8 = tkinter.Button(win, text="银行流水重复删除", font=("隶书",10), width=15, height=2, fg="green")
+button8 = tkinter.Button(win, text="银行流水重复删除", command=create_newwin_bankdet,font=("隶书",10), width=15, height=2, fg="green")
 button8.place(x=260, y=300, anchor='nw')
 
 b2 = tkinter.Label(win, text="返回信息：",font=("隶书",10), fg="green")
