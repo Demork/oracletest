@@ -43,7 +43,7 @@ def go(sql):  #处理事件，*args表示可变参数
         cur.close()  # 关闭cursor对象
         conn.close()  # 关闭数据库链接
         return result
-    if (sql.split()[0] == 'update' or sql.split()[0] == 'delete') :
+    if (sql.split()[0] == 'update' or sql.split()[0] == 'delete' or sql.split()[0] == 'create' or sql.split()[0] == 'drop') :
         cur.execute(sql)
         effectRow = cur.rowcount
         conn.commit()  # 执行update操作时需要写这个，否则就会更新不成功
@@ -220,14 +220,187 @@ def create_newwin_jjk():
 
 #银行明细重复检测，创建一个窗口来处理
 def create_newwin_bankdet():
-    print('1111')
     top = Toplevel()
     top.title('银行流水重复')
-    top.geometry("700x400")
-    ts = tkinter.Label(top, text="检测银行流水重复执行删除！！", font=("隶书", 10), fg="red")
-    ts.place(x=1, y=20, anchor='nw')
-    tl = tkinter.Label(top, text="以下银行明细表中重复的数据:", font=("隶书", 10), fg="green")
-    tl.place(x=5, y=40, anchor='nw')
+    top.geometry("830x400")
+    ts = tkinter.Label(top, text="检测银行流水重复执行删除！！请谨慎使用！！！", font=("隶书", 10), fg="red")
+    ts.place(x=1, y=60, anchor='nw')
+    tl = tkinter.Label(top, text="以下银行明细表中重复的数据，请核实:", font=("隶书", 10), fg="green")
+    tl.place(x=5, y=90, anchor='nw')
+
+    columns_title_c1 = ("1", "2", "3", "4","5")
+    show_msgc1 = ttk.Treeview(top, height=10, show="headings", columns=columns_title_c1)  # 表格
+
+    columns_title_c2 = ("1", "2", "3", "4","5","6")
+    show_msgc2 = ttk.Treeview(top, height=10, show="headings", columns=columns_title_c2)  # 表格
+
+    str = StringVar()
+    alert_msgc = tkinter.Label(top, textvariable=str, font=("隶书", 10), fg="green")
+    alert_msgc.place(x=200, y=350, anchor='nw')
+
+    btn = Button(top, text='删除以上明细', fg="green")
+
+
+    def selection1():
+        if CheckVar1.get() == 1:
+            str.set("")
+            CheckVar2.set(0)
+            show_msgc2.place_forget()
+            show_msgc1.pack
+            show_msgc1.heading('1', text='交易日期')
+            show_msgc1.heading('2', text='主机交易号')
+            show_msgc1.heading('3', text='银行账号')
+            show_msgc1.heading('4', text='资金类型', )
+            show_msgc1.heading('5', text='单号', )
+            show_msgc1.column('1', width=80, anchor='center')
+            show_msgc1.column('4', width=80, anchor='center')
+            show_msgc1.place(x=5, y=110, anchor='nw')
+
+            show_msgc1_sql="select t.transaction_date,t.accountant_bill_num,t.cust_acc_num,(select bbt.type_name from base_business_type bbt \
+                            where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
+                            where (t.transaction_date, t.accountant_bill_num,t.cust_acc_num, t.bank_remark) in ( \
+                            select bdi.transaction_date,bdi.accountant_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                            where  bdi.accountant_bill_num is not null and bdi.acc_detailed_type = 1 \
+                            group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark having count(*)>1) \
+                            and  id not in (select min(id) from bank_detailed_info tt where tt.accountant_bill_num is not null and tt.acc_detailed_type = 1 \
+                            group by tt.transaction_date,tt.accountant_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
+
+            show_msgc1_sql_results = go(show_msgc1_sql)
+
+            x = show_msgc1.get_children()
+            for item in x:
+                show_msgc1.delete(item)
+
+            if len(show_msgc1_sql_results) > 0:
+                j = 0
+                for i in show_msgc1_sql_results:
+                    show_msgc1.insert('', 'end', values=show_msgc1_sql_results[j])
+                    j = j + 1
+            else:
+                show_msgc1.insert('', 'end', values='暂无结果')
+
+            def show_msgc1_del(event):
+
+               show_msgc1_sql_results = go(show_msgc1_sql)
+               print('222222')
+               if len(show_msgc1_sql_results) > 0:
+                #先创建一个表存数据，在进行删除
+                    creat_table_sql = "create table data_temp  as select t.id ,t.transaction_date,t.accountant_bill_num,t.cust_acc_num,(select bbt.type_name from base_business_type bbt \
+                                where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
+                                where (t.transaction_date, t.accountant_bill_num,t.cust_acc_num, t.bank_remark) in ( \
+                                select bdi.transaction_date,bdi.accountant_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                                where  bdi.accountant_bill_num is not null and bdi.acc_detailed_type = 1 \
+                                group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark having count(*)>1) \
+                                and  id not in (select min(id) from bank_detailed_info tt where tt.accountant_bill_num is not null and tt.acc_detailed_type = 1 \
+                                group by tt.transaction_date,tt.accountant_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
+
+                    creat_table_results = go(creat_table_sql)
+
+                    show_msgc1_del_sql = "delete from bank_detailed_info bdi where bdi.id in (select id from data_temp)"
+                    show_msgc1_del_results = go(show_msgc1_del_sql)
+
+                    #删除 data_temp
+                    drop_table_sql = "drop table data_temp"
+                    drop_results = go(drop_table_sql)
+                    str.set("数据删除成功！！！")
+                    #删除后再次进行查询是否存在重复明细
+                    agin_query_results = go(show_msgc1_sql)
+
+                    x = show_msgc1.get_children()
+                    for item in x:
+                        show_msgc1.delete(item)
+
+                    if len(agin_query_results) > 0:
+                        j = 0
+                        for i in agin_query_results:
+                            show_msgc1.insert('', 'end', values=agin_query_results[j])
+                            j = j + 1
+                    else:
+                        show_msgc1.insert('', 'end', values='暂无结果')
+               else:
+                    str.set("没有重复数据，无需操作！！！")
+
+        # btn1 = Button(top, text='删除以上明细',fg="green")
+        btn.bind('<Button-1>', show_msgc1_del)
+        btn.place(x=5, y=350)
+
+    def selection2():
+        if CheckVar2.get() == 1:
+            str.set("")
+            CheckVar1.set(0)
+            show_msgc1.place_forget()
+            show_msgc2.pack
+            show_msgc2.heading('1', text='交易日期')
+            show_msgc2.heading('2', text='主机交易号')
+            show_msgc2.heading('3', text='合约交易号')
+            show_msgc2.heading('4', text='银行账号', )
+            show_msgc2.heading('5', text='资金类型', )
+            show_msgc2.heading('6', text='银行备注', )
+            show_msgc2.column('1', width=80, anchor='center')
+            show_msgc2.column('5', width=80, anchor='center')
+            show_msgc2.column('6', width=80, anchor='center')
+            show_msgc2.place(x=5, y=110, anchor='nw')
+
+            show_msgc2_sql = "select t.transaction_date,t.accountant_bill_num,t.cash_manage_bill_num,t.cust_acc_num,\
+                                    (select bbt.type_name from base_business_type bbt where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
+                                    where (t.transaction_date, t.accountant_bill_num,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
+                                    select bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                                    where  bdi.cash_manage_bill_num is not null and bdi.acc_detailed_type = 1 group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark \
+                                    having count(*)>1)and  id not in (select min(id) from bank_detailed_info tt \
+                                    where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
+
+            show_msgc2_sql_results = go(show_msgc2_sql)
+
+            x = show_msgc2.get_children()
+            for item in x:
+                show_msgc2.delete(item)
+
+            if len(show_msgc2_sql_results) > 0:
+                j = 0
+                for i in show_msgc2_sql_results:
+                    show_msgc2.insert('', 'end', values=show_msgc2_sql_results[j])
+                    j = j + 1
+            else:
+                show_msgc1.insert('', 'end', values='暂无结果')
+
+            def show_msgc2_del(event):
+                print('111111')
+                btn['bg'] = 'yellow'
+                show_msgc2_sql_results = go(show_msgc2_sql)
+
+                creat_table_sql = "select t.transaction_date,t.accountant_bill_num,t.cash_manage_bill_num,t.cust_acc_num,\
+                                    (select bbt.type_name from base_business_type bbt where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
+                                    where (t.transaction_date, t.accountant_bill_num,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
+                                    select bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                                    where  bdi.cash_manage_bill_num is not null and bdi.acc_detailed_type = 1 group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark \
+                                    having count(*)>1)and  id not in (select min(id) from bank_detailed_info tt \
+                                    where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
+
+        # btn2 = Button(top, text='删除以上明细', fg="green")
+        btn.bind('<Button-1>', show_msgc2_del)
+        btn.place(x=5, y=350)
+
+
+    CheckVar1 = IntVar()
+    CheckVar2 = IntVar()
+    C1 = Checkbutton(top, text="一户通版本", variable=CheckVar1, command=selection1, \
+                     onvalue=1, offvalue=0, height=3, \
+                     width=20)
+    C2 = Checkbutton(top, text="智慧政法1.0", variable=CheckVar2, command=selection2, \
+                     onvalue=1, offvalue=0, height=3, \
+                     width=20)
+    # C1.pack()
+    # C2.pack()
+
+    C1.place(x=150,y=1, anchor='nw')
+    C2.place(x=300, y=1, anchor='nw')
+
+
+
+
+
+
+
 
 
 
