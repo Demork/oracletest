@@ -2,6 +2,7 @@ import tkinter
 from tkinter import ttk
 import cx_Oracle as oea
 from tkinter import *
+import os
 import  time
 # root = Tk()
 import tkinter.messagebox as messagebox
@@ -10,7 +11,7 @@ ser_name = 'pora12c1.lecent.domain'
 msg=[]
 bill_number=''
 class link_oracle:
-    f = open("./oracle_link.txt","r",encoding='UTF-8')
+    f = open("E:\\lecent_all\\oracle_link.txt","r",encoding='UTF-8')
     lines = f.readlines()
     for line in lines:
         line = line.rstrip("\n")
@@ -57,8 +58,6 @@ def go(sql):  #处理事件，*args表示可变参数
 def link_linux_server():
     print('11111')
 
-
-
 #查询上下账状态不正常的
 def prisoner_money_check():
     sql = "select * from (select t.deposit_id as 单号,t.bank_card_number as 卡号,t.status as 状态 from capital_deposit_item t \
@@ -88,7 +87,7 @@ def prisoner_money_check():
     else:
         bill_num.insert('insert', '暂无结果！')
 
-
+#上下账处理
 def create_newwin():
     top = Toplevel()
     top.title('上下账处理')
@@ -160,8 +159,7 @@ def create_newwin():
     Button(top, text='提交处理',command=prisoner_money_status).place(x=310, y=80)
 
 
-
-
+#接见款处理
 def create_newwin_jjk():
     top = Toplevel()
     top.title('接见款处理')
@@ -431,7 +429,7 @@ def create_newwin_bankdet():
     C2.place(x=300, y=1, anchor='nw')
 
 
-
+#上下账单状态修改，未交易
 def change_status_wid():
     top = Toplevel()
     top.title('上下账单状态修改')
@@ -496,6 +494,7 @@ def change_status_wid():
 
     Button(top, text='提交处理', command=prisoner_money_changestatus).place(x=310, y=80)
 
+#罪犯编号修改
 def change_prisoner_bh():
     top = Toplevel()
     top.title('罪犯编号修改')
