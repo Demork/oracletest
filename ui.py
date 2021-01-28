@@ -2,6 +2,7 @@ import tkinter
 from tkinter import ttk
 import cx_Oracle as oea
 from tkinter import *
+import  time
 # root = Tk()
 import tkinter.messagebox as messagebox
 db_port = '1521'
@@ -33,7 +34,7 @@ def go(sql):  #处理事件，*args表示可变参数
     # print('ip：'+IP+'用户：'+user+'密码：'+psd)
     conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
     aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
-    aletr_msg.place(x=550, y=40, anchor='nw')
+    aletr_msg.place(x=600, y=40, anchor='nw')
     #conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'oracle.lecent.domain') #本地测试
     cur = conn.cursor()  # 定义连接对象
     # sql = "select * from base_offender_info where 1=1"
@@ -43,6 +44,7 @@ def go(sql):  #处理事件，*args表示可变参数
         cur.close()  # 关闭cursor对象
         conn.close()  # 关闭数据库链接
         return result
+
     if (sql.split()[0] == 'update' or sql.split()[0] == 'delete' or sql.split()[0] == 'create' or sql.split()[0] == 'drop') :
         cur.execute(sql)
         effectRow = cur.rowcount
@@ -51,6 +53,9 @@ def go(sql):  #处理事件，*args表示可变参数
         conn.close()  # 关闭数据库链接
         return effectRow
 
+#连接服务器
+def link_linux_server():
+    print('11111')
 
 
 
@@ -74,7 +79,6 @@ def prisoner_money_check():
 
     if len(results) > 0:
         # return_msg.insert('insert',results)
-        print(len(results))
         j = 0
         for i in results:
             return_msg.insert('', 'end', values=results[j])
@@ -102,7 +106,6 @@ def create_newwin():
 
     # 上下账处理处理中的
     def prisoner_money_status():
-        print(v1.get()[0:2])
         str = StringVar()
         alert_msg = tkinter.Label(top, textvariable=str, font=("隶书", 10), fg="green")
         alert_msg.place(x=1, y=150, anchor='nw')
@@ -189,7 +192,6 @@ def create_newwin_jjk():
                 left join bank_proxy_payment_received bpr on cc.bill_number = bpr.cust_bill_number \
                 where cc.bill_number in (select ccd.main_single_bill_number from capital_cash_detailed ccd where ccd.status = 3)"
     jjk_query = go(jjk_proxy)
-    print(jjk_query)
 
     x = jjk_msg.get_children()
     for item in x:
@@ -228,6 +230,13 @@ def create_newwin_bankdet():
     tl = tkinter.Label(top, text="以下银行明细表中重复的数据，请核实:", font=("隶书", 10), fg="green")
     tl.place(x=5, y=90, anchor='nw')
 
+    chf_title = tkinter.Label(top, text="重复明细:", font=("隶书", 10), fg="green")
+    chf_title.place(x=300, y=90, anchor='nw')
+
+    str_count = StringVar()
+    total_count = tkinter.Label(top, textvariable=str_count, font=("隶书", 10), fg="green")
+    total_count.place(x=370, y=90, anchor='nw')
+
     columns_title_c1 = ("1", "2", "3", "4","5")
     show_msgc1 = ttk.Treeview(top, height=10, show="headings", columns=columns_title_c1)  # 表格
 
@@ -243,6 +252,7 @@ def create_newwin_bankdet():
 
     def selection1():
         if CheckVar1.get() == 1:
+            btn['bg'] = 'white'
             str.set("")
             CheckVar2.set(0)
             show_msgc2.place_forget()
@@ -266,7 +276,7 @@ def create_newwin_bankdet():
                             group by tt.transaction_date,tt.accountant_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
 
             show_msgc1_sql_results = go(show_msgc1_sql)
-
+            str_count.set(len(show_msgc1_sql_results))
             x = show_msgc1.get_children()
             for item in x:
                 show_msgc1.delete(item)
@@ -280,9 +290,8 @@ def create_newwin_bankdet():
                 show_msgc1.insert('', 'end', values='暂无结果')
 
             def show_msgc1_del(event):
-
+               btn['bg'] = 'orange'
                show_msgc1_sql_results = go(show_msgc1_sql)
-               print('222222')
                if len(show_msgc1_sql_results) > 0:
                 #先创建一个表存数据，在进行删除
                     creat_table_sql = "create table data_temp  as select t.id ,t.transaction_date,t.accountant_bill_num,t.cust_acc_num,(select bbt.type_name from base_business_type bbt \
@@ -304,16 +313,16 @@ def create_newwin_bankdet():
                     drop_results = go(drop_table_sql)
                     str.set("数据删除成功！！！")
                     #删除后再次进行查询是否存在重复明细
-                    agin_query_results = go(show_msgc1_sql)
+                    agin_queryc1_results = go(show_msgc1_sql)
 
                     x = show_msgc1.get_children()
                     for item in x:
                         show_msgc1.delete(item)
 
-                    if len(agin_query_results) > 0:
+                    if len(agin_queryc1_results) > 0:
                         j = 0
-                        for i in agin_query_results:
-                            show_msgc1.insert('', 'end', values=agin_query_results[j])
+                        for i in agin_queryc1_results:
+                            show_msgc1.insert('', 'end', values=agin_queryc1_results[j])
                             j = j + 1
                     else:
                         show_msgc1.insert('', 'end', values='暂无结果')
@@ -326,6 +335,7 @@ def create_newwin_bankdet():
 
     def selection2():
         if CheckVar2.get() == 1:
+            btn['bg'] = 'white'
             str.set("")
             CheckVar1.set(0)
             show_msgc1.place_forget()
@@ -350,7 +360,7 @@ def create_newwin_bankdet():
                                     where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
 
             show_msgc2_sql_results = go(show_msgc2_sql)
-
+            str_count.set(len(show_msgc2_sql_results))
             x = show_msgc2.get_children()
             for item in x:
                 show_msgc2.delete(item)
@@ -364,17 +374,42 @@ def create_newwin_bankdet():
                 show_msgc1.insert('', 'end', values='暂无结果')
 
             def show_msgc2_del(event):
-                print('111111')
-                btn['bg'] = 'yellow'
+                btn['bg'] = 'grey'
                 show_msgc2_sql_results = go(show_msgc2_sql)
+                if len(show_msgc2_sql_results) > 0:
+                    creat_table_sql = "create table data_temp as select t.id,t.transaction_date,t.accountant_bill_num,t.cash_manage_bill_num,t.cust_acc_num,\
+                                        (select bbt.type_name from base_business_type bbt where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
+                                        where (t.transaction_date, t.accountant_bill_num,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
+                                        select bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                                        where  bdi.cash_manage_bill_num is not null and bdi.acc_detailed_type = 1 group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark \
+                                        having count(*)>1)and  id not in (select min(id) from bank_detailed_info tt \
+                                        where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
 
-                creat_table_sql = "select t.transaction_date,t.accountant_bill_num,t.cash_manage_bill_num,t.cust_acc_num,\
-                                    (select bbt.type_name from base_business_type bbt where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
-                                    where (t.transaction_date, t.accountant_bill_num,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
-                                    select bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
-                                    where  bdi.cash_manage_bill_num is not null and bdi.acc_detailed_type = 1 group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark \
-                                    having count(*)>1)and  id not in (select min(id) from bank_detailed_info tt \
-                                    where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
+                    creat_table_results = go(creat_table_sql)
+
+                    show_msgc2_del_sql = "delete from bank_detailed_info bdi where bdi.id in (select id from data_temp)"
+                    show_msgc2_del_results = go(show_msgc2_del_sql)
+
+                    # 删除 data_temp
+                    drop_table_sql = "drop table data_temp"
+                    drop_results = go(drop_table_sql)
+                    str.set("数据删除成功！！！")
+                    # 删除后再次进行查询是否存在重复明细
+                    agin_queryc2_results = go(show_msgc2_sql)
+
+                    x = show_msgc2.get_children()
+                    for item in x:
+                        show_msgc2.delete(item)
+
+                    if len(agin_queryc2_results) > 0:
+                        j = 0
+                        for i in agin_queryc2_results:
+                            show_msgc2.insert('', 'end', values=agin_queryc2_results[j])
+                            j = j + 1
+                    else:
+                        show_msgc2.insert('', 'end', values='暂无结果')
+                else:
+                    str.set("没有重复数据，无需操作！！！")
 
         # btn2 = Button(top, text='删除以上明细', fg="green")
         btn.bind('<Button-1>', show_msgc2_del)
@@ -397,23 +432,132 @@ def create_newwin_bankdet():
 
 
 
+def change_status_wid():
+    top = Toplevel()
+    top.title('上下账单状态修改')
+    top.geometry("600x300")
+    ts = tkinter.Label(top, text="处理银行未交易成功但是状态为“处理中”且无中间表的情况！！", font=("隶书", 10), fg="red")
+    ts.place(x=1, y=20, anchor='nw')
+    tl = tkinter.Label(top, text="输入单号:", font=("隶书", 10), fg="green")
+    tl.place(x=5, y=60, anchor='nw')
+
+    order = StringVar()
+    ordernum = Entry(top, textvariable=order, width=40)
+    # bill_number = v1.get()
+    ordernum.grid(row=1, column=0, padx=10, pady=10)
+    ordernum.place(x=10, y=80)
+
+    def prisoner_money_changestatus():
+        str = StringVar()
+        alert_msg = tkinter.Label(top, textvariable=str, font=("隶书", 10), fg="green")
+        alert_msg.place(x=1, y=150, anchor='nw')
+        if order.get()[0:2] == 'CD':
+            #先查询输入的单号是否存在
+            query_sql = "select * from capital_deposit cd where cd.deposit_id='" + order.get() + "'"
+            query_sql_results = go(query_sql)
+            if len(query_sql_results) > 0:
+                #更新主单
+                cd_sql = "update capital_deposit cd set cd.status = 5 where cd.status in (9,2) and cd.deposit_id not in \
+                            (select bpr.cust_bill_number from bank_proxy_payment_received bpr ) and cd.deposit_id='" + order.get() + "'"
+                cd_sql_results = go(cd_sql)
+                #更新明细单
+                cd_d_sql = "update capital_deposit_item cdi set cdi.status = 0 where cdi.status = 2 and \
+                                cdi.deposit_id not in (select bpr.cust_bill_number from bank_proxy_payment_received bpr)and cdi.deposit_id='" + order.get() + "'"
+                cd_d_sql_results = go(cd_d_sql)
+                str.set("上账主单和明细单更新成功！！")
+            else:
+                str.set("未查询到此上账单号！！")
+        if order.get()[0:2] == 'CW':
+            query_sql = "select * from capital_withdrawl cw where cw.withdrawl_id='" + order.get() + "'"
+            query_sql_results = go(query_sql)
+            if len(query_sql_results) > 0:
+                cw_sql = "update capital_withdrawl cw set cw.status = 5 where cw.status in (9,2) and cw.deposit_id not in \
+                            (select bpr.cust_bill_number from bank_proxy_payment_received bpr ) and cw.withdrawl_id='" + order.get() + "'"
+                cw_sql_results = go(cw_sql)
+                cw_d_sql = "update capital_withdrawl_item cwi set cwi.status = 0 where cwi.status = 2 and \
+                            cwi.withdrawl_id not in (select bpr.cust_bill_number from bank_proxy_payment_received bpr)and cwi.withdrawl_id='" + order.get() + "'"
+                cw_d_sql_results = go(cw_d_sql)
+                str.set("下账主单和明细单更新成功！！")
+            else:
+                str.set("未查询到此下账单号！！")
+        if order.get()[0:3] == 'JJK':
+            query_sql = "select * from capital_cash_detailed ccd where ccd.bill_number='" + order.get() + "'"
+            query_sql_results = go(query_sql)
+            if len(query_sql_results) > 0:
+                ccd_sql = "update capital_cash_detailed ccd set ccd.status = 0 where ccd.status=3 and ccd.main_single_bill_number \
+                                not in (select bpr.cust_bill_number from bank_proxy_payment_received bpr)and ccd.bill_number = '" + order.get() + "'"
+                ssd_sql_results = go(ccd_sql)
+                str.set("该接见款状态修改成功！！！")
+            else:
+                str.set("未查询到此接见款单号！！")
+
+        if order.get()[0:2] not in  ('CD','CD') and order.get()[0:3] != 'JJK':
+            str.set("单号错误！！")
+
+    Button(top, text='提交处理', command=prisoner_money_changestatus).place(x=310, y=80)
+
+def change_prisoner_bh():
+    top = Toplevel()
+    top.title('罪犯编号修改')
+    top.geometry("600x300")
+    ts = tkinter.Label(top, text="将修改所涉及的表：base_offender_info，offender_encounterhistory，", font=("隶书", 10), fg="red")
+    ts.place(x=1, y=20, anchor='nw')
+    t1 = tkinter.Label(top, text="输入当前编号:", font=("隶书", 10), fg="green")
+    t1.place(x=5, y=60, anchor='nw')
+
+    t2 = tkinter.Label(top, text="输入更改的编号:", font=("隶书", 10), fg="green")
+    t2.place(x=5, y=105, anchor='nw')
+
+    curr_bh = StringVar()
+    curr = Entry(top, textvariable=curr_bh, width=40)
+    # bill_number = v1.get()
+    curr.grid(row=1, column=0, padx=10, pady=10)
+    curr.place(x=10, y=80)
+
+    change_bh = StringVar()
+    changebh = Entry(top, textvariable=change_bh, width=40)
+    # bill_number = v1.get()
+    changebh.grid(row=1, column=0, padx=10, pady=10)
+    changebh.place(x=10, y=125)
+
+    msg_show_str1 = StringVar()
+    msg_show1 = tkinter.Label(top, textvariable=msg_show_str1, font=("隶书", 10), fg="green")
+    msg_show1.place(x=10, y=200, anchor='nw')
+
+    msg_show_str2 = StringVar()
+    msg_show2 = tkinter.Label(top, textvariable=msg_show_str2, font=("隶书", 10), fg="green")
+    msg_show2.place(x=10, y=230, anchor='nw')
+
+    def prisoner_bh_change():
+        #首先查询要更改的编号是否已经在使用
+        query_bh_sql = "select boi.zf_bh from base_offender_info boi where boi.zf_bh='"+change_bh.get() + "'"
+        query_bh_sql_results = go(query_bh_sql)
+        if len(query_bh_sql_results) != 0:
+            msg_show_str1.set(change_bh.get())
+            msg_show_str2.set("编号已经存在，禁止更改！！！")
+        else:
+            boi_update_sql = "update base_offender_info boi set boi.zf_bh='"+change_bh.get() + "'"+"where boi.zf_bh = '" +curr_bh.get() + "'"
+            boi_update_sql_results = go(boi_update_sql)
+            if boi_update_sql_results != 0:
+                msg_show_str1.set("base_offender_info更改成功......")
+            else:
+                msg_show_str1.set("base_offender_info未找到数据，更改失败......")
+
+            oe_update_sql = "update offender_encounterhistory oe set oe.offender_code='"+change_bh.get() + "'"+" where oe.offender_code = '" +curr_bh.get() + "'"
+            oe_update_sql_results = go(oe_update_sql)
+            if oe_update_sql_results != 0:
+                msg_show_str2.set("offender_encounterhistory更改成功......")
+            else:
+                msg_show_str2.set("offender_encounterhistory未找到数据，更改失败......")
+
+    Button(top, text='提交更改', command=prisoner_bh_change).place(x=10, y=160)
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+#一下一级窗口
 comvalue=tkinter.StringVar()#窗体自带的文本，新建一个值
 comboxlist=ttk.Combobox(win,width=65, height=20,font=1,textvariable=comvalue) #初始化
 comboxlist["values"]=msg
@@ -426,7 +570,7 @@ comboxlist.place(x=10,y=40,anchor='nw')
 # comboxlist.pack()
 
 #功能----上下账模块，接见款
-w2 = tkinter.Label(win, text="1、处理中检测：状态为处理中的或者异常的；2、同步明细：处理银行交易成功且未同步的明细的；3、状态修改：处理银行未交易的单子为失败",font=("隶书",9), fg="red")
+w2 = tkinter.Label(win, text="1、检测：状态为0,2,9的；2、上下账处理：处理银行交易成功且未同步的明细的；3、状态修改：处理银行未交易且没有中间表的单子为待提交（含接见款）",font=("隶书",9), fg="red")
 w2.place(x=10, y=130, anchor='nw')
 
 
@@ -434,17 +578,17 @@ button1 = tkinter.Button(win, text="上下账单检测", font=("隶书",10), com
 button1.place(x=10, y=90, anchor='nw')
 # button1.pack()
 
-button2 = tkinter.Button(win, text="上下账处理", font=("隶书",10), command=create_newwin,width=10, height=2, fg="green")
-button2.place(x=150, y=90, anchor='nw')
+button2 = tkinter.Button(win, text="上下账单处理", font=("隶书",10), command=create_newwin,width=12, height=2, fg="green")
+button2.place(x=115, y=90, anchor='nw')
 
-button3 = tkinter.Button(win, text="上下账处理中状态修改", font=("隶书",10), width=18, height=2, fg="green")
-button3.place(x=300, y=90, anchor='nw')
+button3 = tkinter.Button(win, text="上下账处理中状态修改", font=("隶书",10), command=change_status_wid,width=18, height=2, fg="green")
+button3.place(x=220, y=90, anchor='nw')
 
-button4 = tkinter.Button(win, text="接见款处理中", font=("隶书",10), command=create_newwin_jjk, width=18, height=2, fg="green")
-button4.place(x=450, y=90, anchor='nw')
+button4 = tkinter.Button(win, text="接见款处理中", font=("隶书",10), command=create_newwin_jjk, width=12, height=2, fg="green")
+button4.place(x=370, y=90, anchor='nw')
 
-button5 = tkinter.Button(win, text="接见款处理中状态修改", font=("隶书",10), width=18, height=2, fg="green")
-button5.place(x=600, y=90, anchor='nw')
+button5 = tkinter.Button(win, text="罪犯编号修改", font=("隶书",10), command=change_prisoner_bh,width=12,height=2, fg="green")
+button5.place(x=480, y=90, anchor='nw')
 
 b1 = tkinter.Label(win, text="返回信息：",font=("隶书",10), fg="green")
 b1.place(x=5, y=200, anchor='nw')
@@ -469,7 +613,7 @@ bill_num.place(x=600, y=150, anchor='nw')
 
 
 #功能---服务器模块
-button6 = tkinter.Button(win, text="服务器空间查询", font=("隶书",10), width=13, height=2, fg="green")
+button6 = tkinter.Button(win, text="服务器空间查询", command=link_linux_server,font=("隶书",10), width=13, height=2, fg="green")
 button6.place(x=10, y=300, anchor='nw')
 
 button7 = tkinter.Button(win, text="tomcat日志清除", font=("隶书",10), width=14, height=2, fg="green")
