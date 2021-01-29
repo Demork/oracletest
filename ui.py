@@ -2,6 +2,7 @@ import tkinter
 from tkinter import ttk
 import cx_Oracle as oea
 from tkinter import *
+import linux_server
 import os
 import  time
 # root = Tk()
@@ -10,12 +11,19 @@ db_port = '1521'
 ser_name = 'pora12c1.lecent.domain'
 msg=[]
 bill_number=''
+server_msg=[]
 class link_oracle:
     f = open("E:\\lecent_all\\oracle_link.txt","r",encoding='UTF-8')
     lines = f.readlines()
     for line in lines:
         line = line.rstrip("\n")
         msg.append(line)
+class link_server:
+    f = open("E:\\lecent_all\\linux_server.txt","r",encoding='UTF-8')
+    lines = f.readlines()
+    for line in lines:
+        line = line.rstrip("\n")
+        server_msg.append(line)
 
 win = tkinter.Tk()
 win.title("老资管常见数据问题处理脚本工具(oracle)")
@@ -28,14 +36,14 @@ w1.place(x=250, y=5, anchor='nw')
 def go(sql):  #处理事件，*args表示可变参数
     # print(comboxlist.get().split(',')) #打印选中的值
     #获取IP,用户及密码连接Oracle
-    status=0
     IP=comboxlist.get().split(',')[0]
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
-    # print('ip：'+IP+'用户：'+user+'密码：'+psd)
-    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    print('ip:'+IP+'用户:'+user+'密码:'+psd)
+    conn = oea.connect(user,psd,IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    print(conn)
     aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
-    aletr_msg.place(x=600, y=40, anchor='nw')
+    aletr_msg.place(x=650, y=40, anchor='nw')
     #conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'oracle.lecent.domain') #本地测试
     cur = conn.cursor()  # 定义连接对象
     # sql = "select * from base_offender_info where 1=1"
@@ -54,9 +62,6 @@ def go(sql):  #处理事件，*args表示可变参数
         conn.close()  # 关闭数据库链接
         return effectRow
 
-#连接服务器
-def link_linux_server():
-    print('11111')
 
 #查询上下账状态不正常的
 def prisoner_money_check():
@@ -455,7 +460,7 @@ def change_status_wid():
             query_sql_results = go(query_sql)
             if len(query_sql_results) > 0:
                 #更新主单
-                cd_sql = "update capital_deposit cd set cd.status = 5 where cd.status in (9,2) and cd.deposit_id not in \
+                cd_sql = "update capital_deposit cd set cd.status = 5 where cd.status in (9,2,3) and cd.deposit_id not in \
                             (select bpr.cust_bill_number from bank_proxy_payment_received bpr ) and cd.deposit_id='" + order.get() + "'"
                 cd_sql_results = go(cd_sql)
                 #更新明细单
@@ -469,7 +474,7 @@ def change_status_wid():
             query_sql = "select * from capital_withdrawl cw where cw.withdrawl_id='" + order.get() + "'"
             query_sql_results = go(query_sql)
             if len(query_sql_results) > 0:
-                cw_sql = "update capital_withdrawl cw set cw.status = 5 where cw.status in (9,2) and cw.deposit_id not in \
+                cw_sql = "update capital_withdrawl cw set cw.status = 5 where cw.status in (9,2,3) and cw.deposit_id not in \
                             (select bpr.cust_bill_number from bank_proxy_payment_received bpr ) and cw.withdrawl_id='" + order.get() + "'"
                 cw_sql_results = go(cw_sql)
                 cw_d_sql = "update capital_withdrawl_item cwi set cwi.status = 0 where cwi.status = 2 and \
@@ -551,6 +556,25 @@ def change_prisoner_bh():
 
     Button(top, text='提交更改', command=prisoner_bh_change).place(x=10, y=160)
 
+#连接服务器，获取配置文件IP信息
+def link_linux_server():
+    msg_count = len(server_msg)
+    print(server_msg)
+    params = {
+        'hostname': '192.168.1.25',
+        'username': 'root',
+        'port': '22',
+        'password': 'lecent123',
+    }
+
+    linux_server.LinuxBase(params)
+
+
+    print("111")
+
+
+
+
 
 
 
@@ -569,7 +593,7 @@ comboxlist.place(x=10,y=40,anchor='nw')
 # comboxlist.pack()
 
 #功能----上下账模块，接见款
-w2 = tkinter.Label(win, text="1、检测：状态为0,2,9的；2、上下账处理：处理银行交易成功且未同步的明细的；3、状态修改：处理银行未交易且没有中间表的单子为待提交（含接见款）",font=("隶书",9), fg="red")
+w2 = tkinter.Label(win, text="1、检测：明细状态为0,2,9的；2、上下账处理：处理银行交易成功且未同步的明细的；3、状态修改：处理银行未交易且没有中间表的单子为待提交（含接见款）",font=("隶书",9), fg="red")
 w2.place(x=10, y=130, anchor='nw')
 
 
@@ -580,7 +604,7 @@ button1.place(x=10, y=90, anchor='nw')
 button2 = tkinter.Button(win, text="上下账单处理", font=("隶书",10), command=create_newwin,width=12, height=2, fg="green")
 button2.place(x=115, y=90, anchor='nw')
 
-button3 = tkinter.Button(win, text="上下账处理中状态修改", font=("隶书",10), command=change_status_wid,width=18, height=2, fg="green")
+button3 = tkinter.Button(win, text="上下账处理中状态修改", font=("隶书",10), command=change_status_wid,width=19, height=2, fg="green")
 button3.place(x=220, y=90, anchor='nw')
 
 button4 = tkinter.Button(win, text="接见款处理中", font=("隶书",10), command=create_newwin_jjk, width=12, height=2, fg="green")
@@ -626,8 +650,8 @@ b2 = tkinter.Label(win, text="返回信息：",font=("隶书",10), fg="green")
 b2.place(x=20, y=400, anchor='nw')
 
 
-button2 = tkinter.Button(win, text="导出生成Excel",font=("隶书",15), width=15, height=3, fg="green")
-button2.place(x=300, y=600, anchor='nw')
+# button2 = tkinter.Button(win, text="导出生成Excel",font=("隶书",15), width=15, height=3, fg="green")
+# button2.place(x=300, y=600, anchor='nw')
 
 #连接oracle
 
