@@ -3,14 +3,12 @@ from tkinter import ttk
 import cx_Oracle as oea
 from tkinter import *
 import xlwt
-from xlwt import *
+from datetime import datetime
 from linux_server import LinuxBase
-import os
-import  time
-# root = Tk()
-import tkinter.messagebox as messagebox
-
 from ssh import SSH
+import tkinter.filedialog
+import unicodedata
+from tkinter import messagebox  # 弹出提示框
 
 db_port = '1521'
 ser_name = 'pora12c1.lecent.domain'
@@ -18,13 +16,13 @@ msg=[]
 bill_number=''
 server_msg=[]
 class link_oracle:
-    f = open("E:\\lecent_all\\oracle_link.txt","r",encoding='UTF-8')
+    f = open("C:\\lecent_all\\oracle_link.txt","r",encoding='UTF-8')
     lines = f.readlines()
     for line in lines:
         line = line.rstrip("\n")
         msg.append(line)
 class link_server:
-    f = open("E:\\lecent_all\\linux_server.txt","r",encoding='UTF-8')
+    f = open("C:\\lecent_all\\linux_server.txt","r",encoding='UTF-8')
     lines = f.readlines()
     for line in lines:
         line = line.rstrip("\n")
@@ -45,7 +43,7 @@ def go(sql):  #处理事件，*args表示可变参数
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
     print('ip:'+IP+'用户:'+user+'密码:'+psd)
-    conn = oea.connect(user,psd,IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    conn = oea.connect(user,psd,IP + ':' + '46108' + '/' + 'pora12c1.lecent.domain')
     print(conn)
     aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
     aletr_msg.place(x=650, y=40, anchor='nw')
@@ -71,13 +69,19 @@ def go(sql):  #处理事件，*args表示可变参数
 def prisoner_money_check():
     sql = "select * from (select t.deposit_id as 单号,t.bank_card_number as 卡号,t.status as 状态 from capital_deposit_item t \
     where t.status in (0,2,9) union all select cwi.withdrawl_id as 单号,cwi.bank_card_number as 卡号,cwi.status as 状态 \
-    from capital_withdrawl_item cwi where cwi.status in (0,2,9)) order by 状态 desc "
+    from capital_withdrawl_item cwi where cwi.status in (0,2,9)  union all select odi.bill_number as 单号,odi.bank_card_number as 卡号,111 as 状态 \
+    from offender_detailed_info odi where (odi.bill_number like 'CW%' or odi.bill_number like 'CD%') and odi.offender_trasaction_money <>0 \
+    and odi.bill_number not in (select bill from (select cdi.deposit_id as bill  from  capital_deposit cdi union all \
+    select t.withdrawl_id as bill from capital_withdrawl t) )) order by 状态 desc "
     results = go(sql)
 
     bill_num.delete("1.0", tkinter.END)
     sql_bill = "select 单号 from (select t.deposit_id as 单号,t.bank_card_number as 卡号,t.status as 状态 from capital_deposit_item t \
     where t.status in (0,2,9) union all select cwi.withdrawl_id as 单号,cwi.bank_card_number as 卡号,cwi.status as 状态 \
-    from capital_withdrawl_item cwi where cwi.status in (0,2,9)) group by 单号  "
+    from capital_withdrawl_item cwi where cwi.status in (0,2,9)union all select odi.bill_number as 单号,odi.bank_card_number as 卡号,111 as 状态 \
+    from offender_detailed_info odi where (odi.bill_number like 'CW%' or odi.bill_number like 'CD%') and odi.offender_trasaction_money <>0 \
+    and odi.bill_number not in (select bill from (select cdi.deposit_id as bill  from  capital_deposit cdi union all \
+    select t.withdrawl_id as bill from capital_withdrawl t) )) group by 单号  "
     bill_results = go(sql_bill)
     bill_num.insert('insert',bill_results)
 
@@ -233,7 +237,7 @@ def create_newwin_bankdet():
     top = Toplevel()
     top.title('银行流水重复')
     top.geometry("830x400")
-    top.resizable(0, 0)  # 锁定窗口
+    # top.resizable(0, 0)  # 锁定窗口
     ts = tkinter.Label(top, text="检测银行流水重复执行删除！！请谨慎使用！！！", font=("隶书", 10), fg="red")
     ts.place(x=1, y=60, anchor='nw')
     tl = tkinter.Label(top, text="以下银行明细表中重复的数据，请核实:", font=("隶书", 10), fg="green")
@@ -565,6 +569,8 @@ def change_prisoner_bh():
 
 #连接服务器，获取配置文件IP信息
 def link_linux_server():
+    linux_space_info.delete("1.0", tkinter.END)
+    # tomcat_msg.delete("1.0", tkinter.END)
     msg_count = len(server_msg)
     print(server_msg)
     params = {
@@ -573,18 +579,108 @@ def link_linux_server():
         'port': 22,
         'password': 'lecent123',
     }
-    with SSH(hostname='192.168.1.25', password= 'lecent123', port=22) as ssh:
-        stdin, stdout, stderr = ssh.exec_command("ls")
-        print(stdout)
+    with SSH(**params) as ssh:
+        stdin, stdout, stderr = ssh.exec_command("df -h")
+        out_results = stdout.read()
+        return_str = str(out_results,encoding="utf-8")
+        # print(return_str)
+        linux_space_info.insert('insert', return_str)
+        #获取项目路径以及catalina.out  ps -ef | grep tomcat| grep -v grep|awk '{print $2}',ls -l /proc/82073/cwd
+        stdin, stdout, stderr = ssh.exec_command("ps -ef | grep tomcat| grep -v grep|awk '{print $2}'")
+        pid = stdout.read()
+        pid_str = str(pid,encoding="utf-8")
+        list_pid = []
+        for i in pid_str.split('\n'):
+            if i != '':
+                list_pid.append(i)
+        #获取项目路径 和端口
+        datalist = []
+        for tm_pid in list_pid:
+            stdin, stdout, stderr = ssh.exec_command("ls -l /proc/"+tm_pid+"/cwd | awk '{print $11}' &&  netstat -nap | grep "+tm_pid+" | awk '{print $4}' | sed -n '1p' | sed 's/::://'")
+            tm_pid_rul = stdout.read().decode('utf-8')
+            data = tm_pid_rul.replace("\n", " ").split(' ')
+            if isinstance(data, list):
+                if len(data) > 2:
+                    if data[-1] == '':
+                        data.pop(-1)
+                    datalist.append({"path": data[0], "port": data[1]})
+                else:
+                    datalist.append({"path": None, "port": None})
+        print(datalist[0])
+        tomcat1_msg.set(datalist[0])
 
-    print("111")
+def clear_catalina():
+    top = Toplevel()
+    top.title('项目日志检测')
+    top.geometry("700x400")
+    # top.resizable(0, 0)  # 锁定窗口
 
+    server_info = tkinter.StringVar()  # 窗体自带的文本，新建一个值
+    server_infolist = ttk.Combobox(top, width=50, height=20, font=1, textvariable=server_info)  # 初始化
+    server_infolist["values"] = server_msg
+    server_infolist.current()  # 默认选择第一个
+    server_infolist.place(x=10, y=40, anchor='nw')
+
+    log_title = ("0", "1")
+    log_msg = ttk.Treeview(top, height=10, show="headings", columns=log_title)  # 表格
+    log_msg.place(x=10, y=110)
+    # log_msg.pack()
+    log_msg.heading('0', text='size')
+    log_msg.heading('1', text='path')
+    log_msg.column('0', width=50, anchor='center')
+    log_msg.column('1', width=300, anchor='center')
+    def clear():
+        IP = server_infolist.get().split(',')[0]
+        port = server_infolist.get().split(',')[1]
+        psd = server_infolist.get().split(',')[3]
+        params = {
+            'hostname': IP,
+            'username': 'root',
+            'port': port,
+            'password': psd,
+        }
+        print(params)
+
+
+
+        with SSH(**params) as ssh:
+            stdin, stdout, stderr = ssh.exec_command("find  / -iname 'catalina.out'")
+            path_log = stdout.read().decode('utf-8')
+            path_log_list = path_log.replace("\n", " ").split(' ')
+            print(path_log_list)
+            list_msg = []
+            for item in path_log_list:
+                if item != '':
+                    stdin, stdout, stderr = ssh.exec_command("du -sh "+item)
+                    return_data = stdout.read().decode('utf-8')
+                    # list_msg.append(return_data.replace("\t", " ").split('\n'))
+                    for item_msg in return_data.replace("\t", " ").split('\n'):
+                        if item_msg != '':
+                            list_msg.append(item_msg)
+            print(list_msg)
+
+            x = log_msg.get_children()
+            for item in x:
+                log_msg.delete(item)
+            if len(list_msg) > 0:
+                j = 0
+                for i in list_msg:
+                    log_msg.insert('', 'end', values=list_msg[j])
+                    j = j + 1
+            else:
+                log_msg.insert('', 'end', values='暂无结果')
+
+    Button(top, text="确定", font=("隶书",10),command=clear,width=10, height=2, fg="green").place(x=10, y=70, anchor='nw')
+
+
+
+
+#检测账号资金
 def capital_test():
     top = Toplevel()
     top.title('资金检测')
     top.geometry("700x400")
     top.resizable(0, 0) #锁定窗口
-    #账号表余额与历史余额是否相符
     til = tkinter.Label(top, text="1、银行余额检测:一户通专用，检测账户表银行余额是否与历史余额相符(此工具请先执行系统操作的1,2,3步骤)", font=("隶书", 10), fg="red")
     til_1 = tkinter.Label(top,text="2、智慧政法1.0检测:检测账户表银行余额是否与银行流水明细交易金额累加余额相符", font=("隶书", 10), fg="red")
     til_2 = tkinter.Label(top, text="3、系统操作：1、先拉取银行流水表为正常;2、再同步拉取账户余额;3、再执行此工具;4、时间为当天时间 ", font=("隶书", 10), fg="red")
@@ -594,7 +690,7 @@ def capital_test():
     til_2.place(x=1, y=40, anchor='nw')
     til_3.place(x=1, y=60, anchor='nw')
 
-    capital_title = ("1", "2", "3", "4", "5", "6")
+    capital_title = ("0", "1", "2", "3", "4", "5")
     capital_msg = ttk.Treeview(top, height=10, show="headings", columns=capital_title)  # capital_check表格
 
     bank_msg= ttk.Treeview(top, height=10, show="headings", columns=capital_title)  # bank_check表格
@@ -614,17 +710,17 @@ def capital_test():
         zfzfh_bank_msg.pack_forget()
         capital_msg.pack()
         capital_msg.place(x=2, y=120)
-        capital_msg.heading('1', text='姓名')
-        capital_msg.heading('2', text='账号')
-        capital_msg.heading('3', text='狱内银行余额')
-        capital_msg.heading('4', text='狱外银行余额')
-        capital_msg.heading('5', text='差额(狱内-狱外)')
-        capital_msg.heading('6', text='账号状态')
-        capital_msg.column('1', width=80, anchor='center')
+        capital_msg.heading('0', text='姓名')
+        capital_msg.heading('1', text='账号')
+        capital_msg.heading('2', text='狱内银行余额')
+        capital_msg.heading('3', text='狱外银行余额')
+        capital_msg.heading('4', text='差额(狱内-狱外)')
+        capital_msg.heading('5', text='账号状态')
+        capital_msg.column('0', width=80, anchor='center')
+        capital_msg.column('2', width=80, anchor='center')
         capital_msg.column('3', width=80, anchor='center')
-        capital_msg.column('4', width=80, anchor='center')
-        capital_msg.column('5', width=95, anchor='center')
-        capital_msg.column('6', width=80, anchor='center')
+        capital_msg.column('4', width=95, anchor='center')
+        capital_msg.column('5', width=80, anchor='center')
         capital_query_sql = "select * from (select (select xm from base_offender_info boi where boi.id = t.offender_id) as xm,\
                                 t.bank_card_number,t.bank_balance,c.balance,(t.bank_balance - c.balance) as ce,\
                                 (case (select status from base_offender_info boi where boi.id = t.offender_id)when 1 then '在狱' else '出狱'end) as status \
@@ -644,6 +740,31 @@ def capital_test():
                 j = j + 1
         else:
             capital_msg.insert('', 'end', values='暂无结果')
+            capital_count.set('0')
+
+        # 导出btn
+        def report_data():
+            file = xlwt.Workbook()
+            sheet1 = file.add_sheet('sheet1', cell_overwrite_ok=True)
+            list_data = []
+            for i in range(0, len(capital_title)):
+                sheet1.write(0, i, capital_msg.heading(i)['text'])
+            for j in capital_query_sql_results:
+                list_data.append(j)
+            b = 1
+            for k, q in enumerate(list_data):
+                for a in range(0, len(list_data[k])):
+                    sheet1.write(b, a, list_data[k][a])
+                b = b + 1
+            datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
+            filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')],
+                                                            initialfile="银行余额检测" + datestring, initialdir='C:\\')
+            filename = filename + '.xls'
+            # messagebox.showinfo("提示", "保存完毕~！！！")
+            # file.save('E:\\lecent_all\\'+'罪犯余额检测'+datestring+'.xlsx')
+            file.save(filename)
+
+        Button(top, text='导出数据', command=report_data, fg='green').place(x=600, y=355)
 
     def bank_check():
         capital_msg.place_forget()
@@ -651,17 +772,17 @@ def capital_test():
         zfzfh_bank_msg.pack_forget()
         bank_msg.pack()
         bank_msg.place(x=2, y=120)
-        bank_msg.heading('1', text='姓名')
-        bank_msg.heading('2', text='账号')
-        bank_msg.heading('3', text='账户表银行余额')
-        bank_msg.heading('4', text='资金表累加余额')
-        bank_msg.heading('5', text='差额(账户表-资金表)')
-        bank_msg.heading('6', text='账号状态')
-        bank_msg.column('1', width=80, anchor='center')
+        bank_msg.heading('0', text='姓名')
+        bank_msg.heading('1', text='账号')
+        bank_msg.heading('2', text='账户表银行余额')
+        bank_msg.heading('3', text='资金表累加余额')
+        bank_msg.heading('4', text='差额(账户表-资金表)')
+        bank_msg.heading('5', text='账号状态')
+        bank_msg.column('0', width=80, anchor='center')
+        bank_msg.column('2', width=100, anchor='center')
         bank_msg.column('3', width=100, anchor='center')
-        bank_msg.column('4', width=100, anchor='center')
-        bank_msg.column('5', width=120, anchor='center')
-        bank_msg.column('6', width=80, anchor='center')
+        bank_msg.column('4', width=120, anchor='center')
+        bank_msg.column('5', width=80, anchor='center')
 
         bank_msg_sql = "select * from (select (select xm from base_offender_info boi where boi.id=tb.offender_id) as xm ,tb.bank_card_number,tb.bank_balance,tt.je,tb.bank_balance - tt.je as ce, \
                         (case (select status from base_offender_info boi where boi.id=tb.offender_id) when 1 then '在狱'else '出狱' end )as status from base_offender_account tb,\
@@ -679,6 +800,31 @@ def capital_test():
                 j = j + 1
         else:
             bank_msg.insert('', 'end', values='暂无结果')
+            capital_count.set('0')
+
+        # 导出btn
+        def report_data():
+            file = xlwt.Workbook()
+            sheet1 = file.add_sheet('sheet1', cell_overwrite_ok=True)
+            list_data = []
+            for i in range(0, len(capital_title)):
+                sheet1.write(0, i, bank_msg.heading(i)['text'])
+            for j in bank_msg_sql_results:
+                list_data.append(j)
+            b = 1
+            for k, q in enumerate(list_data):
+                for a in range(0, len(list_data[k])):
+                    sheet1.write(b, a, list_data[k][a])
+                b = b + 1
+            datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
+            filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')],
+                                                            initialfile="资金余额检测" + datestring, initialdir='C:\\')
+            filename = filename + '.xls'
+            # messagebox.showinfo("提示", "保存完毕~！！！")
+            # file.save('E:\\lecent_all\\'+'罪犯余额检测'+datestring+'.xlsx')
+            file.save(filename)
+
+        Button(top, text='导出数据', command=report_data, fg='green').place(x=600, y=355)
 
     def balance_check():
         capital_msg.place_forget()
@@ -686,17 +832,17 @@ def capital_test():
         zfzfh_bank_msg.pack_forget()
         balance_msg.pack()
         balance_msg.place(x=2, y=120)
-        balance_msg.heading('1', text='姓名')
-        balance_msg.heading('2', text='账号')
-        balance_msg.heading('3', text='罪犯余额')
-        balance_msg.heading('4', text='台账累加余额')
-        balance_msg.heading('5', text='差额(账户表-台账)')
-        balance_msg.heading('6', text='账号状态')
-        balance_msg.column('1', width=80, anchor='center')
-        balance_msg.column('3', width=70, anchor='center')
-        balance_msg.column('4', width=90, anchor='center')
-        balance_msg.column('5', width=115, anchor='center')
-        balance_msg.column('6', width=80, anchor='center')
+        balance_msg.heading('0', text='姓名')
+        balance_msg.heading('1', text='账号')
+        balance_msg.heading('2', text='罪犯余额')
+        balance_msg.heading('3', text='台账累加余额')
+        balance_msg.heading('4', text='差额(账户表-台账)')
+        balance_msg.heading('5', text='账号状态')
+        balance_msg.column('0', width=80, anchor='center')
+        balance_msg.column('2', width=70, anchor='center')
+        balance_msg.column('3', width=90, anchor='center')
+        balance_msg.column('4', width=115, anchor='center')
+        balance_msg.column('5', width=80, anchor='center')
 
         balance_msg_sql = "select * from (select (select xm from base_offender_info boi where boi.id=tb.offender_id) as xm ,tb.bank_card_number,tb.total_quota,tt.je,tb.total_quota - tt.je as ce,\
                             (case (select status from base_offender_info boi where boi.id=tb.offender_id) when 1 then '在狱'else '出狱' end )as status from base_offender_account tb,\
@@ -714,20 +860,29 @@ def capital_test():
                 j = j + 1
         else:
             balance_msg.insert('', 'end', values='暂无结果')
+            capital_count.set('0')
         #导出btn
         def report_data():
-            # 创建一个workbook 设置编码
-            workbook = xlwt.Workbook(encoding='utf-8')
-            # 创建一个worksheet
-            worksheet = workbook.add_sheet('My Worksheet')
-
-
-
-
-
+           file = xlwt.Workbook()
+           sheet1 = file.add_sheet('sheet1',cell_overwrite_ok=True)
+           list_data = []
+           for i in range(0,len(capital_title)):
+               sheet1.write(0,i,balance_msg.heading(i)['text'])
+           for j in balance_msg_sql_results:
+               list_data.append(j)
+           b = 1
+           for k,q in enumerate(list_data):
+               for a in range(0,len(list_data[k])):
+                   sheet1.write(b, a, list_data[k][a])
+               b = b + 1
+           datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
+           filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')], initialfile="罪犯余额检测"+datestring, initialdir='C:\\')
+           filename = filename + '.xls'
+           # messagebox.showinfo("提示", "保存完毕~！！！")
+           # file.save('E:\\lecent_all\\'+'罪犯余额检测'+datestring+'.xlsx')
+           file.save(filename)
 
         Button(top, text='导出数据', command=report_data, fg='green').place(x=600, y=355)
-
 
     def zhzf_bank_check():
         capital_msg.place_forget()
@@ -735,17 +890,17 @@ def capital_test():
         balance_msg.pack_forget()
         zfzfh_bank_msg.pack()
         zfzfh_bank_msg.place(x=2, y=120)
-        zfzfh_bank_msg.heading('1', text='姓名')
-        zfzfh_bank_msg.heading('2', text='账号')
-        zfzfh_bank_msg.heading('3', text='账户余额')
-        zfzfh_bank_msg.heading('4', text='银行流水余额')
-        zfzfh_bank_msg.heading('5', text='差额(账户表-流水表)')
-        zfzfh_bank_msg.heading('6', text='账号状态')
-        zfzfh_bank_msg.column('1', width=80, anchor='center')
-        zfzfh_bank_msg.column('3', width=70, anchor='center')
-        zfzfh_bank_msg.column('4', width=90, anchor='center')
-        zfzfh_bank_msg.column('5', width=120, anchor='center')
-        zfzfh_bank_msg.column('6', width=80, anchor='center')
+        zfzfh_bank_msg.heading('0', text='姓名')
+        zfzfh_bank_msg.heading('1', text='账号')
+        zfzfh_bank_msg.heading('2', text='账户余额')
+        zfzfh_bank_msg.heading('3', text='银行流水余额')
+        zfzfh_bank_msg.heading('4', text='差额(账户表-流水表)')
+        zfzfh_bank_msg.heading('5', text='账号状态')
+        zfzfh_bank_msg.column('0', width=80, anchor='center')
+        zfzfh_bank_msg.column('2', width=70, anchor='center')
+        zfzfh_bank_msg.column('3', width=90, anchor='center')
+        zfzfh_bank_msg.column('4', width=120, anchor='center')
+        zfzfh_bank_msg.column('5', width=80, anchor='center')
         zfzfh_bank_msg_sql = "select * from (select (select xm from base_offender_info boi where boi.id=c.offender_id) as xm,c.bank_card_number,c.bank_balance,d.balance,c.bank_balance - d.balance as ce,\
                                 (case (select status from base_offender_info boi where boi.id=c.offender_id) when 1 then '在狱'else '出狱' end )as status from base_offender_account c,\
                                 (select * from bank_detailed_info a where exists (select * from (select t.cust_acc_num,max(t.transaction_date) as t_date,max(t.detailed_num) as mnum \
@@ -763,15 +918,36 @@ def capital_test():
                 j = j + 1
         else:
             zfzfh_bank_msg.insert('', 'end', values='暂无结果')
+            capital_count.set('0')
+
+        # 导出btn
+        def report_data():
+            file = xlwt.Workbook()
+            sheet1 = file.add_sheet('sheet1', cell_overwrite_ok=True)
+            list_data = []
+            for i in range(0, len(capital_title)):
+                sheet1.write(0, i, zfzfh_bank_msg.heading(i)['text'])
+            for j in zfzfh_bank_msg_sql_results:
+                list_data.append(j)
+            b = 1
+            for k, q in enumerate(list_data):
+                for a in range(0, len(list_data[k])):
+                    sheet1.write(b, a, list_data[k][a])
+                b = b + 1
+            datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
+            filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')],
+                                                            initialfile="智慧政府银行余额检测" + datestring, initialdir='C:\\')
+            filename = filename + '.xls'
+            # messagebox.showinfo("提示", "保存完毕~！！！")
+            # file.save('E:\\lecent_all\\'+'罪犯余额检测'+datestring+'.xlsx')
+            file.save(filename)
+
+        Button(top, text='导出数据', command=report_data, fg='green').place(x=600, y=355)
 
     Button(top, text='银行余额检测', command=capital_check,fg='green').place(x=2, y=80)
     Button(top, text='资金余额检测', command=bank_check, fg='green').place(x=100, y=80)
     Button(top, text='罪犯余额检测', command=balance_check, fg='green').place(x=200, y=80)
     Button(top, text='智慧政法1.0检测', command=zhzf_bank_check, fg='green').place(x=300, y=80)
-
-
-
-
 
 #一下一级窗口
 comvalue=tkinter.StringVar()#窗体自带的文本，新建一个值
@@ -826,15 +1002,30 @@ bill_num.place(x=600, y=150, anchor='nw')
 button6 = tkinter.Button(win, text="服务器空间查询", command=link_linux_server,font=("隶书",10), width=13, height=2, fg="green")
 button6.place(x=10, y=300, anchor='nw')
 
-button7 = tkinter.Button(win, text="tomcat日志清除", font=("隶书",10), width=14, height=2, fg="green")
+button7 = tkinter.Button(win, text="tomcat日志清除", command=clear_catalina,font=("隶书",10), width=14, height=2, fg="green")
 button7.place(x=130, y=300, anchor='nw')
 
 #数据重复
 button8 = tkinter.Button(win, text="银行流水重复删除", command=create_newwin_bankdet,font=("隶书",10), width=15, height=2, fg="green")
 button8.place(x=260, y=300, anchor='nw')
 
-b2 = tkinter.Label(win, text="返回信息：",font=("隶书",10), fg="green")
-b2.place(x=20, y=400, anchor='nw')
+b2 = tkinter.Label(win, text="空间查询信息：",font=("隶书",10), fg="green")
+b2.place(x=5, y=340, anchor='nw')
+
+linux_space_info = tkinter.Text(win,width=50,height=15)
+linux_space_info.config(wrap=WORD)
+linux_space_info.place(x=5, y=360, anchor='nw')
+
+tomcat1_msg = StringVar()
+tomcat1 = tkinter.Label(win, textvariable=tomcat1_msg, font=("隶书", 10), fg="green")
+tomcat1.place(x=5, y=570, anchor='nw')
+
+
+
+
+# tomcat_msg = tkinter.Text(win,width=70,height=7)
+# tomcat_msg.config(wrap=WORD)
+# tomcat_msg.place(x=5, y=600, anchor='nw')
 
 # button2 = tkinter.Button(win, text="导出生成Excel",font=("隶书",15), width=15, height=3, fg="green")
 # button2.place(x=300, y=600, anchor='nw')
