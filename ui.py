@@ -4,7 +4,6 @@ import cx_Oracle as oea
 from tkinter import *
 import xlwt
 from datetime import datetime
-from linux_server import LinuxBase
 from ssh import SSH
 import tkinter.filedialog
 import unicodedata
@@ -30,7 +29,8 @@ class link_server:
 
 win = tkinter.Tk()
 win.title("老资管常见数据问题处理脚本工具(oracle)")
-win.geometry("900x700")
+win.geometry("900x500")
+win.resizable(0, 0)  # 锁定窗口
 #说明
 w1 = tkinter.Label(win, text="以下功能直接点击后会自动进行检查，未返回结果之前请勿关闭！！",font=("隶书",9), fg="red")
 w1.place(x=250, y=5, anchor='nw')
@@ -43,7 +43,8 @@ def go(sql):  #处理事件，*args表示可变参数
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
     print('ip:'+IP+'用户:'+user+'密码:'+psd)
-    conn = oea.connect(user,psd,IP + ':' + '46108' + '/' + 'pora12c1.lecent.domain')
+    # conn = oea.connect(user,psd,IP + ':' + '46108' + '/' + 'pora12c1.lecent.domain')
+    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
     print(conn)
     aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
     aletr_msg.place(x=650, y=40, anchor='nw')
@@ -236,7 +237,7 @@ def create_newwin_jjk():
 def create_newwin_bankdet():
     top = Toplevel()
     top.title('银行流水重复')
-    top.geometry("830x400")
+    top.geometry("850x400")
     # top.resizable(0, 0)  # 锁定窗口
     ts = tkinter.Label(top, text="检测银行流水重复执行删除！！请谨慎使用！！！", font=("隶书", 10), fg="red")
     ts.place(x=1, y=60, anchor='nw')
@@ -384,7 +385,7 @@ def create_newwin_bankdet():
                     show_msgc2.insert('', 'end', values=show_msgc2_sql_results[j])
                     j = j + 1
             else:
-                show_msgc1.insert('', 'end', values='暂无结果')
+                show_msgc2.insert('', 'end', values='暂无结果')
 
             def show_msgc2_del(event):
                 btn['bg'] = 'grey'
@@ -516,7 +517,9 @@ def change_prisoner_bh():
     top.geometry("600x300")
     top.resizable(0, 0)  # 锁定窗口
     ts = tkinter.Label(top, text="将修改所涉及的表：base_offender_info，offender_encounterhistory，", font=("隶书", 10), fg="red")
-    ts.place(x=1, y=20, anchor='nw')
+    ts.place(x=1, y=5, anchor='nw')
+    info = tkinter.Label(top, text="提交更改:未使用编号修改。提交互换:两罪犯编号之间修改", font=("隶书", 10), fg="red")
+    info.place(x=1, y=25, anchor='nw')
     t1 = tkinter.Label(top, text="输入当前编号:", font=("隶书", 10), fg="green")
     t1.place(x=5, y=60, anchor='nw')
 
@@ -524,13 +527,13 @@ def change_prisoner_bh():
     t2.place(x=5, y=105, anchor='nw')
 
     curr_bh = StringVar()
-    curr = Entry(top, textvariable=curr_bh, width=40)
+    curr = Entry(top, textvariable=curr_bh, width=30)
     # bill_number = v1.get()
     curr.grid(row=1, column=0, padx=10, pady=10)
     curr.place(x=10, y=80)
 
     change_bh = StringVar()
-    changebh = Entry(top, textvariable=change_bh, width=40)
+    changebh = Entry(top, textvariable=change_bh, width=30)
     # bill_number = v1.get()
     changebh.grid(row=1, column=0, padx=10, pady=10)
     changebh.place(x=10, y=125)
@@ -542,6 +545,22 @@ def change_prisoner_bh():
     msg_show_str2 = StringVar()
     msg_show2 = tkinter.Label(top, textvariable=msg_show_str2, font=("隶书", 10), fg="green")
     msg_show2.place(x=10, y=230, anchor='nw')
+
+    msg_show_str3 = StringVar()
+    msg_show3 = tkinter.Label(top, textvariable=msg_show_str3, font=("隶书", 10), fg="green")
+    msg_show3.place(x=250, y=80, anchor='nw')
+
+    msg_show_str4 = StringVar()
+    msg_show4 = tkinter.Label(top, textvariable=msg_show_str4, font=("隶书", 10), fg="green")
+    msg_show4.place(x=250, y=125, anchor='nw')
+
+    msg_show_str5 = StringVar()
+    msg_show5 = tkinter.Label(top, textvariable=msg_show_str5, font=("隶书", 10), fg="green")
+    msg_show5.place(x=400, y=80, anchor='nw')
+
+    msg_show_str6 = StringVar()
+    msg_show6 = tkinter.Label(top, textvariable=msg_show_str6, font=("隶书", 10), fg="green")
+    msg_show6.place(x=400, y=125, anchor='nw')
 
     def prisoner_bh_change():
         #首先查询要更改的编号是否已经在使用
@@ -565,61 +584,60 @@ def change_prisoner_bh():
             else:
                 msg_show_str2.set("offender_encounterhistory未找到数据，更改失败......")
 
+    def exchange_bh():
+        query_sql_first = "select boi.xm,boi.zf_bh from base_offender_info boi where boi.zf_bh='"+curr_bh.get() + "'" # 当前罪犯信息
+        query_sql_first_msg = go(query_sql_first)
+        msg_show_str3.set(query_sql_first_msg)
+        query_sql_sed = "select boi.xm,boi.zf_bh from base_offender_info boi where boi.zf_bh='" + change_bh.get() + "'" # 第二个罪犯信息
+        query_sql_sed_msg = go(query_sql_sed)
+        msg_show_str4.set(query_sql_sed_msg)
+
+        if query_sql_first_msg and query_sql_sed_msg:
+            #执行修改程序,第一个
+            first_boi_update = "update base_offender_info boi set boi.zf_bh='"+query_sql_sed_msg[0][1]+ "'"+" where boi.zf_bh = '"+query_sql_first_msg[0][1]+ "'"
+            f_boi_rel = go(first_boi_update)
+            first_oe_update = "update offender_encounterhistory oe set oe.offender_code='"+change_bh.get() + "'"+" where oe.offender_code = '" +query_sql_first_msg[0][1] + "'"
+            f_oe_rel = go(first_oe_update)
+            # 执行修改程序,第二个
+            sed_boi_update = "update base_offender_info boi set boi.zf_bh='"+query_sql_first_msg[0][1] + "'"+" where boi.zf_bh = '" +query_sql_sed_msg[0][1]+ "'"+" and boi.xm="+"'"+query_sql_sed_msg[0][0]+"'"
+            s_boi_rel = go(sed_boi_update)
+            sed_oe_update = "update offender_encounterhistory oe set oe.offender_code='"+curr_bh.get() + "'"+" where oe.offender_code = '" +query_sql_sed_msg[0][1]+ "'"+" and oe.offender_name="+"'"+query_sql_sed_msg[0][0]+"'"
+            s_oe_rel = go(sed_oe_update)
+            if f_boi_rel and s_boi_rel:
+                msg_show_str1.set("base_offender_info表提交互换成功，请查看系统......")
+            if first_oe_update != 0 or sed_oe_update !=0:
+                msg_show_str2.set("offender_encounterhistory表更新成功，请查看系统......")
+
+            #第二次查询修改后的结果
+            query_update_rel_f = "select boi.xm,boi.zf_bh from base_offender_info boi where boi.zf_bh='"+curr_bh.get()+ "'"
+            query_update_rul_f = go(query_update_rel_f)
+            msg_show_str5.set(query_update_rul_f)
+            query_update_rel_s = "select boi.xm,boi.zf_bh from base_offender_info boi where boi.zf_bh='" +change_bh.get()+ "'"
+            query_update_rul_s = go(query_update_rel_s)
+            msg_show_str6.set(query_update_rul_s)
+
     Button(top, text='提交更改', command=prisoner_bh_change).place(x=10, y=160)
+    Button(top, text='提交互换', command=exchange_bh).place(x=100, y=160)
 
 #连接服务器，获取配置文件IP信息
-def link_linux_server():
-    linux_space_info.delete("1.0", tkinter.END)
-    # tomcat_msg.delete("1.0", tkinter.END)
-    msg_count = len(server_msg)
-    print(server_msg)
-    params = {
-        'hostname': '192.168.1.25',
-        'username': 'root',
-        'port': 22,
-        'password': 'lecent123',
-    }
-    with SSH(**params) as ssh:
-        stdin, stdout, stderr = ssh.exec_command("df -h")
-        out_results = stdout.read()
-        return_str = str(out_results,encoding="utf-8")
-        # print(return_str)
-        linux_space_info.insert('insert', return_str)
-        #获取项目路径以及catalina.out  ps -ef | grep tomcat| grep -v grep|awk '{print $2}',ls -l /proc/82073/cwd
-        stdin, stdout, stderr = ssh.exec_command("ps -ef | grep tomcat| grep -v grep|awk '{print $2}'")
-        pid = stdout.read()
-        pid_str = str(pid,encoding="utf-8")
-        list_pid = []
-        for i in pid_str.split('\n'):
-            if i != '':
-                list_pid.append(i)
-        #获取项目路径 和端口
-        datalist = []
-        for tm_pid in list_pid:
-            stdin, stdout, stderr = ssh.exec_command("ls -l /proc/"+tm_pid+"/cwd | awk '{print $11}' &&  netstat -nap | grep "+tm_pid+" | awk '{print $4}' | sed -n '1p' | sed 's/::://'")
-            tm_pid_rul = stdout.read().decode('utf-8')
-            data = tm_pid_rul.replace("\n", " ").split(' ')
-            if isinstance(data, list):
-                if len(data) > 2:
-                    if data[-1] == '':
-                        data.pop(-1)
-                    datalist.append({"path": data[0], "port": data[1]})
-                else:
-                    datalist.append({"path": None, "port": None})
-        print(datalist[0])
-        tomcat1_msg.set(datalist[0])
+
 
 def clear_catalina():
     top = Toplevel()
     top.title('项目日志检测')
-    top.geometry("700x400")
+    top.geometry("800x400")
     # top.resizable(0, 0)  # 锁定窗口
-
+    explain = tkinter.Label(top, text="选择服务器查询，点击要清除的路径确认清除即可。。。", font=("隶书", 10), fg="red")
+    explain.place(x=1, y=10, anchor='nw')
     server_info = tkinter.StringVar()  # 窗体自带的文本，新建一个值
     server_infolist = ttk.Combobox(top, width=50, height=20, font=1, textvariable=server_info)  # 初始化
     server_infolist["values"] = server_msg
     server_infolist.current()  # 默认选择第一个
     server_infolist.place(x=10, y=40, anchor='nw')
+
+    linux_space_info = tkinter.Text(top, width=55, height=17)
+    linux_space_info.config(wrap=WORD)
+    linux_space_info.place(x=400, y=110, anchor='nw')
 
     log_title = ("0", "1")
     log_msg = ttk.Treeview(top, height=10, show="headings", columns=log_title)  # 表格
@@ -640,8 +658,6 @@ def clear_catalina():
             'password': psd,
         }
         print(params)
-
-
 
         with SSH(**params) as ssh:
             stdin, stdout, stderr = ssh.exec_command("find  / -iname 'catalina.out'")
@@ -670,9 +686,62 @@ def clear_catalina():
             else:
                 log_msg.insert('', 'end', values='暂无结果')
 
+        def treeviewClick(event):  # 单击
+            print('单击')
+            for item in log_msg.selection():
+                item_text = log_msg.item(item, "values")
+                mes = messagebox.askyesno('提示', "要执行此清除日志的操作吗？"+"清除路径：\n"+item_text[1])
+
+                if mes is True:
+                    with SSH(**params) as ssh:
+                        stdin, stdout, stderr = ssh.exec_command("echo -n "" > "+item_text[1])
+                        messagebox.showinfo('提示',"已清空日志\n"+item_text[1])
+        log_msg.bind('<ButtonRelease-1>', treeviewClick)  # 绑定单击离开事件===========
+
+    def link_linux_server():
+        linux_space_info.delete("1.0", tkinter.END)
+        # tomcat_msg.delete("1.0", tkinter.END)
+        IP = server_infolist.get().split(',')[0]
+        port = server_infolist.get().split(',')[1]
+        psd = server_infolist.get().split(',')[3]
+        params = {
+            'hostname': IP,
+            'username': 'root',
+            'port': port,
+            'password': psd,
+        }
+        print(params)
+        with SSH(**params) as ssh:
+            stdin, stdout, stderr = ssh.exec_command("df -h")
+            out_results = stdout.read()
+            return_str = str(out_results, encoding="utf-8")
+            # print(return_str)
+            linux_space_info.insert('insert', return_str)
+            # 获取项目路径以及catalina.out  ps -ef | grep tomcat| grep -v grep|awk '{print $2}',ls -l /proc/82073/cwd
+            stdin, stdout, stderr = ssh.exec_command("ps -ef | grep tomcat| grep -v grep|awk '{print $2}'")
+            pid = stdout.read()
+            pid_str = str(pid, encoding="utf-8")
+            list_pid = []
+            for i in pid_str.split('\n'):
+                if i != '':
+                    list_pid.append(i)
+            # 获取项目路径 和端口
+            datalist = []
+            for tm_pid in list_pid:
+                stdin, stdout, stderr = ssh.exec_command("ls -l /proc/" + tm_pid + "/cwd | awk '{print $11}' &&  netstat -nap | grep " + tm_pid + " | awk '{print $4}' | sed -n '1p' | sed 's/::://'")
+                tm_pid_rul = stdout.read().decode('utf-8')
+                data = tm_pid_rul.replace("\n", " ").split(' ')
+                if isinstance(data, list):
+                    if len(data) > 2:
+                        if data[-1] == '':
+                            data.pop(-1)
+                        datalist.append({"path": data[0], "port": data[1]})
+                    else:
+                        datalist.append({"path": None, "port": None})
+            print(datalist)
+
     Button(top, text="确定", font=("隶书",10),command=clear,width=10, height=2, fg="green").place(x=10, y=70, anchor='nw')
-
-
+    Button(top, text="服务器空间查询", command=link_linux_server, font=("隶书", 10), width=13, height=2,fg="green").place(x=400, y=70, anchor='nw')
 
 
 #检测账号资金
@@ -953,7 +1022,7 @@ def capital_test():
 comvalue=tkinter.StringVar()#窗体自带的文本，新建一个值
 comboxlist=ttk.Combobox(win,width=65, height=20,font=1,textvariable=comvalue) #初始化
 comboxlist["values"]=msg
-comboxlist.current(0) #默认选择第一个
+comboxlist.current() #默认选择第一个
 # comboxlist.bind("<<ComboboxSelected>>",go) #绑定事件,(下拉列表框被选中时，绑定go()函数)
 comboxlist.place(x=10,y=40,anchor='nw')
 
@@ -998,36 +1067,14 @@ bill_num = tkinter.Text(win,width=30,height=11)
 bill_num.config(wrap=WORD)
 bill_num.place(x=600, y=150, anchor='nw')
 
-#功能---服务器模块
-button6 = tkinter.Button(win, text="服务器空间查询", command=link_linux_server,font=("隶书",10), width=13, height=2, fg="green")
-button6.place(x=10, y=300, anchor='nw')
-
-button7 = tkinter.Button(win, text="tomcat日志清除", command=clear_catalina,font=("隶书",10), width=14, height=2, fg="green")
-button7.place(x=130, y=300, anchor='nw')
+button7 = tkinter.Button(win, text="日志清除&空间查询", command=clear_catalina,font=("隶书",10), width=18, height=2, fg="green")
+button7.place(x=10, y=300, anchor='nw')
 
 #数据重复
 button8 = tkinter.Button(win, text="银行流水重复删除", command=create_newwin_bankdet,font=("隶书",10), width=15, height=2, fg="green")
-button8.place(x=260, y=300, anchor='nw')
+button8.place(x=170, y=300, anchor='nw')
 
-b2 = tkinter.Label(win, text="空间查询信息：",font=("隶书",10), fg="green")
-b2.place(x=5, y=340, anchor='nw')
-
-linux_space_info = tkinter.Text(win,width=50,height=15)
-linux_space_info.config(wrap=WORD)
-linux_space_info.place(x=5, y=360, anchor='nw')
-
-tomcat1_msg = StringVar()
-tomcat1 = tkinter.Label(win, textvariable=tomcat1_msg, font=("隶书", 10), fg="green")
-tomcat1.place(x=5, y=570, anchor='nw')
-
-
-
-
-# tomcat_msg = tkinter.Text(win,width=70,height=7)
-# tomcat_msg.config(wrap=WORD)
-# tomcat_msg.place(x=5, y=600, anchor='nw')
-
-# button2 = tkinter.Button(win, text="导出生成Excel",font=("隶书",15), width=15, height=3, fg="green")
-# button2.place(x=300, y=600, anchor='nw')
+button6 = tkinter.Button(win, text="销售数据检测", command=create_newwin_bankdet,font=("隶书",10), width=14, height=2, fg="green")
+button6.place(x=300, y=300, anchor='nw')
 
 win.mainloop()
