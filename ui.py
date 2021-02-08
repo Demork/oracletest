@@ -238,7 +238,7 @@ def create_newwin_bankdet():
     top = Toplevel()
     top.title('银行流水重复')
     top.geometry("850x400")
-    # top.resizable(0, 0)  # 锁定窗口
+    top.resizable(0, 0)  # 锁定窗口
     ts = tkinter.Label(top, text="检测银行流水重复执行删除！！请谨慎使用！！！", font=("隶书", 10), fg="red")
     ts.place(x=1, y=60, anchor='nw')
     tl = tkinter.Label(top, text="以下银行明细表中重复的数据，请核实:", font=("隶书", 10), fg="green")
@@ -438,8 +438,6 @@ def create_newwin_bankdet():
     C2 = Checkbutton(top, text="智慧政法1.0", variable=CheckVar2, command=selection2, \
                      onvalue=1, offvalue=0, height=3, \
                      width=20)
-    # C1.pack()
-    # C2.pack()
 
     C1.place(x=150,y=1, anchor='nw')
     C2.place(x=300, y=1, anchor='nw')
@@ -516,9 +514,9 @@ def change_prisoner_bh():
     top.title('罪犯编号修改')
     top.geometry("600x300")
     top.resizable(0, 0)  # 锁定窗口
-    ts = tkinter.Label(top, text="将修改所涉及的表：base_offender_info，offender_encounterhistory，", font=("隶书", 10), fg="red")
+    ts = tkinter.Label(top, text="将修改所涉及的表：base_offender_info，offender_encounterhistory", font=("隶书", 10), fg="red")
     ts.place(x=1, y=5, anchor='nw')
-    info = tkinter.Label(top, text="提交更改:未使用编号修改。提交互换:两罪犯编号之间修改", font=("隶书", 10), fg="red")
+    info = tkinter.Label(top, text="编号更改:未使用编号修改。编号互换:两罪犯编号之间进行互换", font=("隶书", 10), fg="red")
     info.place(x=1, y=25, anchor='nw')
     t1 = tkinter.Label(top, text="输入当前编号:", font=("隶书", 10), fg="green")
     t1.place(x=5, y=60, anchor='nw')
@@ -528,13 +526,11 @@ def change_prisoner_bh():
 
     curr_bh = StringVar()
     curr = Entry(top, textvariable=curr_bh, width=30)
-    # bill_number = v1.get()
     curr.grid(row=1, column=0, padx=10, pady=10)
     curr.place(x=10, y=80)
 
     change_bh = StringVar()
     changebh = Entry(top, textvariable=change_bh, width=30)
-    # bill_number = v1.get()
     changebh.grid(row=1, column=0, padx=10, pady=10)
     changebh.place(x=10, y=125)
 
@@ -616,12 +612,10 @@ def change_prisoner_bh():
             query_update_rul_s = go(query_update_rel_s)
             msg_show_str6.set(query_update_rul_s)
 
-    Button(top, text='提交更改', command=prisoner_bh_change).place(x=10, y=160)
-    Button(top, text='提交互换', command=exchange_bh).place(x=100, y=160)
+    Button(top, text='编号更改', command=prisoner_bh_change).place(x=10, y=160)
+    Button(top, text='编号互换', command=exchange_bh).place(x=100, y=160)
 
 #连接服务器，获取配置文件IP信息
-
-
 def clear_catalina():
     top = Toplevel()
     top.title('项目日志检测')
@@ -642,7 +636,6 @@ def clear_catalina():
     log_title = ("0", "1")
     log_msg = ttk.Treeview(top, height=10, show="headings", columns=log_title)  # 表格
     log_msg.place(x=10, y=110)
-    # log_msg.pack()
     log_msg.heading('0', text='size')
     log_msg.heading('1', text='path')
     log_msg.column('0', width=50, anchor='center')
@@ -691,7 +684,6 @@ def clear_catalina():
             for item in log_msg.selection():
                 item_text = log_msg.item(item, "values")
                 mes = messagebox.askyesno('提示', "要执行此清除日志的操作吗？"+"清除路径：\n"+item_text[1])
-
                 if mes is True:
                     with SSH(**params) as ssh:
                         stdin, stdout, stderr = ssh.exec_command("echo -n "" > "+item_text[1])
@@ -700,7 +692,6 @@ def clear_catalina():
 
     def link_linux_server():
         linux_space_info.delete("1.0", tkinter.END)
-        # tomcat_msg.delete("1.0", tkinter.END)
         IP = server_infolist.get().split(',')[0]
         port = server_infolist.get().split(',')[1]
         psd = server_infolist.get().split(',')[3]
@@ -715,7 +706,6 @@ def clear_catalina():
             stdin, stdout, stderr = ssh.exec_command("df -h")
             out_results = stdout.read()
             return_str = str(out_results, encoding="utf-8")
-            # print(return_str)
             linux_space_info.insert('insert', return_str)
             # 获取项目路径以及catalina.out  ps -ef | grep tomcat| grep -v grep|awk '{print $2}',ls -l /proc/82073/cwd
             stdin, stdout, stderr = ssh.exec_command("ps -ef | grep tomcat| grep -v grep|awk '{print $2}'")
@@ -1005,7 +995,7 @@ def capital_test():
                 b = b + 1
             datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
             filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')],
-                                                            initialfile="智慧政府银行余额检测" + datestring, initialdir='C:\\')
+                                                            initialfile="智慧政法银行余额检测" + datestring, initialdir='C:\\')
             filename = filename + '.xls'
             # messagebox.showinfo("提示", "保存完毕~！！！")
             # file.save('E:\\lecent_all\\'+'罪犯余额检测'+datestring+'.xlsx')
@@ -1017,6 +1007,91 @@ def capital_test():
     Button(top, text='资金余额检测', command=bank_check, fg='green').place(x=100, y=80)
     Button(top, text='罪犯余额检测', command=balance_check, fg='green').place(x=200, y=80)
     Button(top, text='智慧政法1.0检测', command=zhzf_bank_check, fg='green').place(x=300, y=80)
+
+#销售检测，资金明细表 减 实际销售金额
+def create_newwin_sale():
+    top = Toplevel()
+    top.title('销售资金检测')
+    top.geometry("850x400")
+    top.resizable(0, 0)  # 锁定窗口
+    sale_title = ("0", "1", "2", "3", "4", "5","6","7")
+    sale_msg = ttk.Treeview(top, height=10, show="headings", columns=sale_title)  # capital_check表格
+    # sale_msg.place(x=5,y=10)
+    sale_msg.pack()
+
+    sale_msg.heading('0',text="罪犯ID")
+    sale_msg.heading('1', text="罪犯姓名")
+    sale_msg.heading('2', text="银行账号")
+    sale_msg.heading('3', text="实际销售金额")
+    sale_msg.heading('4', text="消费结算金额")
+    sale_msg.heading('5', text="差额(消费结算-实际销售)")
+    sale_msg.heading('6', text="消费未结算")
+    sale_msg.heading('7', text="账号状态")
+
+    sale_msg.column('0',width=50,anchor='center')
+    sale_msg.column('1', width=80, anchor='center')
+    sale_msg.column('3', width=90, anchor='center')
+    sale_msg.column('4', width=90, anchor='center')
+    sale_msg.column('5', width=150, anchor='center')
+    sale_msg.column('6', width=80, anchor='center')
+    sale_msg.column('7', width=80, anchor='center')
+
+    sale_total = tkinter.Label(top, text="数量：", font=("隶书", 10), fg="green")
+    sale_total.place(x=150, y=240, anchor='nw')
+    sale_count = StringVar()
+    sale_counts = tkinter.Label(top, textvariable=sale_count, font=("隶书", 10), fg="green")
+    sale_counts.place(x=200, y=240, anchor='nw')
+
+
+    sale_data_search = "select  c.offender_id,c.offender_name,c.bank_card_number,c.实际销售金额,c.transaction_money,boa.consumption_money,c.chae,c.状态 from (select offender_id,offender_name,bank_card_number,实际销售金额,transaction_money,chae,状态 from (select a.xm,b.bank_card_number,\
+                        a.transaction_money,b.实际销售金额,(a.transaction_money - b.实际销售金额) as chae,\
+                       (case (select status from base_offender_info boi where boi.id = a.offender_id) when 0 then '出狱' else '在狱' end) as 状态,b.offender_name,b.offender_id \
+                       from (select * from (select ci.offender_id,(select boa.bank_card_number from base_offender_account boa \
+                        where boa.offender_id = ci.offender_id) as bank_card_number,(select xm from base_offender_info boi where boi.id = ci.offender_id) as offender_name,\
+                        sum(case invoicing_type when 3 then (ci.total_selling_amount) when 4 then -(ci.total_selling_amount) else 0 end) 实际销售金额 from commodity_invoicing ci group by ci.offender_id) \
+                        where offender_id is not null) b left join (select cdi.offender_id, \
+                        (select boi.xm from base_offender_info boi where boi.id = cdi.offender_id) as xm, \
+                        abs(sum(case cdi.transaction_type when 0 then cdi.transaction_money else -cdi.transaction_money end)) as transaction_money  \
+                        from capital_detailed_info cdi where cdi.bill_number like 'XFJS%' \
+                        group by cdi.offender_id) a on b.offender_id = a.offender_id order by (a.transaction_money - b.实际销售金额) asc) where chae != 0 or chae is null ) c  left join base_offender_account boa on c.offender_id = boa.offender_id and c.bank_card_number=boa.bank_card_number \
+                        where chae + boa.consumption_money <> 0 or chae is null order by chae asc"
+    sale_data_rul = go(sale_data_search)
+    x = sale_msg.get_children()
+    for item in x:
+        sale_msg.delete(item)
+    if len(sale_data_rul) > 0:
+        sale_count.set(len(sale_data_rul))
+        j = 0
+        for i in sale_data_rul:
+            sale_msg.insert('', 'end', values=sale_data_rul[j])
+            j = j + 1
+    else:
+        sale_msg.insert('', 'end', values='暂无结果')
+        sale_count.set('0')
+
+    # 导出btn
+    def report_data():
+        file = xlwt.Workbook()
+        sheet1 = file.add_sheet('sheet1', cell_overwrite_ok=True)
+        list_data = []
+        for i in range(0, len(sale_title)):
+            sheet1.write(0, i, sale_msg.heading(i)['text'])
+        for j in sale_data_rul:
+            list_data.append(j)
+        b = 1
+        for k, q in enumerate(list_data):
+            for a in range(0, len(list_data[k])):
+                sheet1.write(b, a, list_data[k][a])
+            b = b + 1
+        datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
+        filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')],initialfile="销售资金检测" + datestring, initialdir='C:\\')
+        filename = filename + '.xls'
+        file.save(filename)
+
+    Button(top, text='导出数据', command=report_data, fg='green').place(x=10, y=240)
+    sale_info = tkinter.Label(top, text="有差额的数据请核实该罪犯狱内消费数据！！1、请查看罪犯消费未结算和当月消费，以及是否调过账！！", font=("隶书", 10), fg="red")
+    sale_info.place(x=10,y=280)
+
 
 #一下一级窗口
 comvalue=tkinter.StringVar()#窗体自带的文本，新建一个值
@@ -1074,7 +1149,10 @@ button7.place(x=10, y=300, anchor='nw')
 button8 = tkinter.Button(win, text="银行流水重复删除", command=create_newwin_bankdet,font=("隶书",10), width=15, height=2, fg="green")
 button8.place(x=170, y=300, anchor='nw')
 
-button6 = tkinter.Button(win, text="销售数据检测", command=create_newwin_bankdet,font=("隶书",10), width=14, height=2, fg="green")
+button6 = tkinter.Button(win, text="销售数据检测", command=create_newwin_sale,font=("隶书",10), width=14, height=2, fg="green")
 button6.place(x=300, y=300, anchor='nw')
+
+#功能说明
+tkinter.Label(win, text="以上功能已全部开放(内网直连，穿透不能使用)",font=("隶书",10), fg="green").place(x=10,y=360)
 
 win.mainloop()
