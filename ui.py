@@ -43,8 +43,8 @@ def go(sql):  #处理事件，*args表示可变参数
     user=comboxlist.get().split(',')[1]
     psd=comboxlist.get().split(',')[2]
     print('ip:'+IP+'用户:'+user+'密码:'+psd)
-    # conn = oea.connect(user,psd,IP + ':' + '46108' + '/' + 'pora12c1.lecent.domain')
-    conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    conn = oea.connect(user,psd,IP + ':' + '46108' + '/' + 'pora12c1.lecent.domain')
+    # conn = oea.connect(user, psd, IP + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
     print(conn)
     aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
     aletr_msg.place(x=650, y=40, anchor='nw')
@@ -247,6 +247,13 @@ def create_newwin_bankdet():
     chf_title = tkinter.Label(top, text="重复明细:", font=("隶书", 10), fg="green")
     chf_title.place(x=300, y=90, anchor='nw')
 
+    chf_title = tkinter.Label(top, text="总金额:", font=("隶书", 10), fg="green")
+    chf_title.place(x=450, y=90, anchor='nw')
+
+    money_count = StringVar()
+    money_total = tkinter.Label(top, textvariable=money_count, font=("隶书", 10), fg="green")
+    money_total.place(x=500, y=90, anchor='nw')
+
     str_count = StringVar()
     total_count = tkinter.Label(top, textvariable=str_count, font=("隶书", 10), fg="green")
     total_count.place(x=370, y=90, anchor='nw')
@@ -259,7 +266,7 @@ def create_newwin_bankdet():
 
     str = StringVar()
     alert_msgc = tkinter.Label(top, textvariable=str, font=("隶书", 10), fg="green")
-    alert_msgc.place(x=200, y=350, anchor='nw')
+    alert_msgc.place(x=400, y=350, anchor='nw')
 
     btn = Button(top, text='删除以上明细', fg="green")
 
@@ -355,46 +362,49 @@ def create_newwin_bankdet():
             show_msgc1.place_forget()
             show_msgc2.pack
             show_msgc2.heading('1', text='交易日期')
-            show_msgc2.heading('2', text='主机交易号')
+            show_msgc2.heading('2', text='交易金额')
             show_msgc2.heading('3', text='合约交易号')
             show_msgc2.heading('4', text='银行账号', )
             show_msgc2.heading('5', text='资金类型', )
             show_msgc2.heading('6', text='银行备注', )
             show_msgc2.column('1', width=80, anchor='center')
+            show_msgc2.column('2', width=60, anchor='center')
             show_msgc2.column('5', width=80, anchor='center')
             show_msgc2.column('6', width=80, anchor='center')
             show_msgc2.place(x=5, y=110, anchor='nw')
 
-            show_msgc2_sql = "select t.transaction_date,t.accountant_bill_num,t.cash_manage_bill_num,t.cust_acc_num,\
+            show_msgc2_sql = "select t.transaction_date,t.transaction_money,t.cash_manage_bill_num,t.cust_acc_num,\
                                     (select bbt.type_name from base_business_type bbt where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
-                                    where (t.transaction_date, t.accountant_bill_num,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
-                                    select bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                                    where (t.transaction_date,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
+                                    select bdi.transaction_date,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
                                     where  bdi.cash_manage_bill_num is not null and bdi.acc_detailed_type = 1 group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark \
                                     having count(*)>1)and  id not in (select min(id) from bank_detailed_info tt \
-                                    where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
+                                    where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1) order by t.transaction_date asc "
 
             show_msgc2_sql_results = go(show_msgc2_sql)
             str_count.set(len(show_msgc2_sql_results))
             x = show_msgc2.get_children()
             for item in x:
                 show_msgc2.delete(item)
-
+            TotalMoney = 0
             if len(show_msgc2_sql_results) > 0:
                 j = 0
                 for i in show_msgc2_sql_results:
                     show_msgc2.insert('', 'end', values=show_msgc2_sql_results[j])
+                    TotalMoney = TotalMoney + show_msgc2_sql_results[j][1]
                     j = j + 1
             else:
                 show_msgc2.insert('', 'end', values='暂无结果')
+            money_count.set(round(TotalMoney,2))
 
             def show_msgc2_del(event):
                 btn['bg'] = 'grey'
                 show_msgc2_sql_results = go(show_msgc2_sql)
                 if len(show_msgc2_sql_results) > 0:
-                    creat_table_sql = "create table data_temp as select t.id,t.transaction_date,t.accountant_bill_num,t.cash_manage_bill_num,t.cust_acc_num,\
+                    creat_table_sql = "create table data_temp as select t.id,t.transaction_date,t.transaction_money,t.cash_manage_bill_num,t.cust_acc_num,\
                                         (select bbt.type_name from base_business_type bbt where t.sub_type_id = bbt.id) as money_type,t.bank_remark from bank_detailed_info t \
-                                        where (t.transaction_date, t.accountant_bill_num,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
-                                        select bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
+                                        where (t.transaction_date,t.cash_manage_bill_num, t.cust_acc_num, t.bank_remark) in ( \
+                                        select bdi.transaction_date,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark from bank_detailed_info bdi \
                                         where  bdi.cash_manage_bill_num is not null and bdi.acc_detailed_type = 1 group by bdi.transaction_date,bdi.accountant_bill_num,bdi.cash_manage_bill_num,bdi.cust_acc_num,bdi.bank_remark \
                                         having count(*)>1)and  id not in (select min(id) from bank_detailed_info tt \
                                         where tt.cash_manage_bill_num is not null and tt.acc_detailed_type = 1 group by tt.transaction_date,tt.accountant_bill_num,tt.cash_manage_bill_num,tt.cust_acc_num,tt.bank_remark having count(*)>1)"
@@ -410,20 +420,44 @@ def create_newwin_bankdet():
                     str.set("数据删除成功！！！")
                     # 删除后再次进行查询是否存在重复明细
                     agin_queryc2_results = go(show_msgc2_sql)
-
+                    str_count.set(len(agin_queryc2_results))
                     x = show_msgc2.get_children()
                     for item in x:
                         show_msgc2.delete(item)
-
+                    AginSumMoney = 0
                     if len(agin_queryc2_results) > 0:
                         j = 0
                         for i in agin_queryc2_results:
                             show_msgc2.insert('', 'end', values=agin_queryc2_results[j])
+                            AginSumMoney = AginSumMoney + show_msgc2_sql_results[j][1]
                             j = j + 1
                     else:
                         show_msgc2.insert('', 'end', values='暂无结果')
                 else:
                     str.set("没有重复数据，无需操作！！！")
+                money_count.set(round(AginSumMoney, 2))
+
+            # 导出btn
+            def report_data():
+                file = xlwt.Workbook()
+                sheet1 = file.add_sheet('sheet1', cell_overwrite_ok=True)
+                list_data = []
+                for i in range(0, len(columns_title_c2)):
+                    sheet1.write(0, i, show_msgc2.heading(i)['text'])
+                for j in show_msgc2_sql_results:
+                    list_data.append(j)
+                b = 1
+                for k, q in enumerate(list_data):
+                    for a in range(0, len(list_data[k])):
+                        sheet1.write(b, a, list_data[k][a])
+                    b = b + 1
+                datestring = datetime.strftime(datetime.now(), ' %Y-%m-%d %H-%M-%S')
+                filename = tkinter.filedialog.asksaveasfilename(filetypes=[('xlsx', '*.xlsx')],
+                                                                initialfile="重复明细检测" + datestring, initialdir='C:\\')
+                filename = filename + '.xls'
+                file.save(filename)
+
+            Button(top, text='导出数据', command=report_data, fg='green').place(x=150, y=350)
 
         # btn2 = Button(top, text='删除以上明细', fg="green")
         btn.bind('<Button-1>', show_msgc2_del)
