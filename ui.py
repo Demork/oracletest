@@ -1187,6 +1187,6 @@ button6 = tkinter.Button(win, text="销售数据检测", command=create_newwin_s
 button6.place(x=300, y=300, anchor='nw')
 
 #功能说明
-tkinter.Label(win, text="以上功能已全部开放(内网直连，穿透不能使用)",font=("隶书",10), fg="green").place(x=10,y=360)
+tkinter.Label(win, text="以上功能已全部开放(海南穿透版本)",font=("隶书",10), fg="green").place(x=10,y=360)
 
 win.mainloop()
