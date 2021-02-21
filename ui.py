@@ -1126,6 +1126,52 @@ def create_newwin_sale():
     sale_info = tkinter.Label(top, text="有差额的数据请核实该罪犯狱内消费数据！！1、请查看罪犯消费未结算和当月消费，以及是否调过账！！", font=("隶书", 10), fg="red")
     sale_info.place(x=10,y=280)
 
+#修改退货天数
+def sale_return():
+    top = Toplevel()
+    top.title('退货天数修改')
+    top.geometry("500x300")
+    top.resizable(0, 0)  # 锁定窗口
+
+    num = StringVar()
+    sale_num = Entry(top, textvariable=num, width=30)
+    sale_num.grid(row=1, column=0, padx=10, pady=10)
+    sale_num.place(x=10, y=80)
+
+    w_msg = tkinter.Label(top, text="输入退货天数   [1-30]之间", font=("隶书", 9), fg="red")
+    w_msg.place(x=10, y=50, anchor='nw')
+
+    msg_show = StringVar()
+    alert = tkinter.Label(top, textvariable=msg_show, font=("隶书", 9), fg="green")
+    alert.place(x=260, y=120, anchor='nw')
+
+    msg_show_suc = StringVar()
+    alert_suc = tkinter.Label(top, textvariable=msg_show_suc, font=("隶书", 9), fg="green")
+    alert_suc.place(x=260, y=80, anchor='nw')
+
+    num = StringVar()
+    sale_num = Entry(top, textvariable=num, width=30)
+    sale_num.grid(row=1, column=0, padx=10, pady=10)
+    sale_num.place(x=10, y=80)
+
+    def sale_return_commit():
+        if num.get() != '':
+            if num.get().isalnum() == True:
+                if int(num.get()) <= 30 and int(num.get()) > 0:
+                    msg_show.set('')
+                    print(num.get())
+                    update_sql = "update base_system_configuration set sale_return=" + num.get()
+                    result = go(update_sql)
+                    msg_show_suc.set("修改成功！！")
+                    messagebox.showinfo('提示', "退货时间已经修改为" + num.get() + "天")
+                else:
+                    msg_show_suc.set('')
+                    msg_show.set("天数介于[1-30]之间！！")
+        else:
+            messagebox.showinfo('提示', "请输入退货天数，1-30之间！！")
+
+    commit_button = tkinter.Button(top, text="提交修改", font=("隶书", 10), command=sale_return_commit, width=12, height=2, fg="green")
+    commit_button.place(x=10, y=120, anchor='nw')
 
 #一下一级窗口
 comvalue=tkinter.StringVar()#窗体自带的文本，新建一个值
@@ -1156,6 +1202,9 @@ button5.place(x=480, y=90, anchor='nw')
 
 button9 = tkinter.Button(win, text="检测账户资金", font=("隶书",10), command=capital_test,width=12,height=2, fg="green")
 button9.place(x=580, y=90, anchor='nw')
+
+button10 = tkinter.Button(win, text="退货天数修改", font=("隶书",10), command=sale_return,width=12,height=2, fg="green")
+button10.place(x=680, y=90, anchor='nw')
 
 b1 = tkinter.Label(win, text="返回信息：",font=("隶书",10), fg="green")
 b1.place(x=5, y=200, anchor='nw')

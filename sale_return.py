@@ -5,7 +5,7 @@ import tkinter.filedialog
 from tkinter import messagebox  # 弹出提示框
 
 win = tkinter.Tk()
-win.title("退货时间修改工具(oracle)")
+win.title("退货时间修改工具(oracle)-昆明监狱专用")
 win.geometry("500x300")
 win.resizable(0, 0)  # 锁定窗口
 #说明
@@ -14,8 +14,8 @@ w1.place(x=80, y=5, anchor='nw')
 
 #连接oracle
 def go(sql):  #处理事件，*args表示可变参数
-    # conn = oea.connect('LECENT', 'lecenTkm3001', '10.9.101.180' + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
-    conn = oea.connect('lecent_ank', 'lecent_ank', '192.168.1.25' + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
+    conn = oea.connect('LECENT', 'lecenTkm3001', '10.9.101.180' + ':' + '1521' + '/' + 'xe')#昆明监狱专用
+    # conn = oea.connect('lecent_ank', 'lecent_ank', '192.168.1.25' + ':' + '1521' + '/' + 'pora12c1.lecent.domain')
     print(conn)
     aletr_msg = tkinter.Label(win, text="数据连接成功...", font=("隶书", 11), fg="green")
     aletr_msg.place(x=650, y=40, anchor='nw')
@@ -48,7 +48,7 @@ def sale_return():
             msg_show_suc.set('')
             msg_show.set("天数介于[1-30]之间！！")
 
-w2 = tkinter.Label(win, text="输入退货天数",font=("隶书",9), fg="red")
+w2 = tkinter.Label(win, text="输入退货天数   [1-30]之间",font=("隶书",9), fg="red")
 w2.place(x=10, y=50, anchor='nw')
 
 msg_show = StringVar()
