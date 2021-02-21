@@ -800,7 +800,7 @@ def capital_test():
     def capital_check():
         bank_msg.place_forget()
         balance_msg.place_forget()
-        zfzfh_bank_msg.pack_forget()
+        zfzfh_bank_msg.place_forget()
         capital_msg.pack()
         capital_msg.place(x=2, y=120)
         capital_msg.heading('0', text='姓名')
@@ -862,7 +862,7 @@ def capital_test():
     def bank_check():
         capital_msg.place_forget()
         balance_msg.place_forget()
-        zfzfh_bank_msg.pack_forget()
+        zfzfh_bank_msg.place_forget()
         bank_msg.pack()
         bank_msg.place(x=2, y=120)
         bank_msg.heading('0', text='姓名')
@@ -922,7 +922,7 @@ def capital_test():
     def balance_check():
         capital_msg.place_forget()
         bank_msg.place_forget()
-        zfzfh_bank_msg.pack_forget()
+        zfzfh_bank_msg.place_forget()
         balance_msg.pack()
         balance_msg.place(x=2, y=120)
         balance_msg.heading('0', text='姓名')
@@ -980,7 +980,7 @@ def capital_test():
     def zhzf_bank_check():
         capital_msg.place_forget()
         bank_msg.place_forget()
-        balance_msg.pack_forget()
+        balance_msg.place_forget()
         zfzfh_bank_msg.pack()
         zfzfh_bank_msg.place(x=2, y=120)
         zfzfh_bank_msg.heading('0', text='姓名')
